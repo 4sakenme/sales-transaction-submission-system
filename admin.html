@@ -86,9 +86,9 @@
                     <h3>📍 Bàn: ${o.table_number}</h3>
                     ${itemsHTML}
                     <p>Trạng thái: <strong>${o.status}</strong></p>
-                    <button class="btn-status" style="background:${o.status === 'pending' ? '#e67e22' : '#3498db'}" 
-                        onclick="updateStatus('${o.id}', '${o.status === 'pending' ? 'cooking' : 'done'}')">
-                        ${o.status === 'pending' ? '🍳 Bắt đầu làm' : '✅ Xong'}
+                    <button class="btn-status" style="background:${o.status === 'Chờ làm' ? '#e67e22' : '#3498db'}" 
+                        onclick="updateStatus('${o.id}', '${o.status === 'Chờ làm' ? 'Đang làm' : 'Xong'}')">
+                        ${o.status === 'Chờ làm' ? '🍳 Bắt đầu làm' : '✅ Xong'}
                     </button>
                 </div>
             `;
