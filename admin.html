@@ -15,7 +15,7 @@
         .bep-section { flex: 1.6; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         .thungon-section { flex: 1; background: #fffdfb; padding: 20px; border-radius: 16px; border: 2px solid #e7a460; height: fit-content; }
         .order-card { border-left: 6px solid #e67e22; margin-bottom: 15px; background: #fffbf7; padding: 15px; border-radius: 12px; border: 1px solid #eddcd0; }
-        .btn-status { border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; color: white; margin-top: 10px; }
+        .btn-status { border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; color: white; margin-top: 10px; transition: 0.3s; }
         .table-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eddcd0; }
         .btn-pay-table { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
         @media (max-width: 768px) { .admin-main-layout { flex-direction: column; } }
@@ -45,11 +45,15 @@
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Cấu hình header mật khẩu để vượt qua RLS
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            global: { headers: { 'x-passcode': 'beut123' } }
+        });
 
         async function loadInitialData() {
             const { data: orders, error } = await supabaseClient.from('orders').select('*');
-            if (error) { console.error(error); return; }
+            if (error) { console.error("Lỗi:", error); return; }
             
             const activeOrders = orders.filter(o => o.status !== 'paid');
             renderOrders(activeOrders);
@@ -63,16 +67,20 @@
             const list = document.getElementById('orders-list');
             const debtList = document.getElementById('table-debts-list');
 
-            list.innerHTML = orders.map(o => `
+            list.innerHTML = orders.map(o => {
+                // Hiển thị nội dung đơn hàng (Items)
+                const itemsDisplay = Array.isArray(o.items) ? o.items.join(', ') : o.items;
+                return `
                 <div class="order-card">
                     <h3>📍 Bàn: ${o.table_number}</h3>
+                    <p>Món: <strong>${itemsDisplay}</strong></p>
                     <p>Trạng thái: ${o.status}</p>
                     <button class="btn-status" style="background:${o.status === 'pending' ? '#e67e22' : '#3498db'}" 
-                        onclick="updateStatus(${o.id}, '${o.status === 'pending' ? 'cooking' : 'done'}')">
+                        onclick="updateStatus('${o.id}', '${o.status === 'pending' ? 'cooking' : 'done'}')">
                         ${o.status === 'pending' ? '🍳 Bắt đầu làm' : '✅ Xong'}
                     </button>
                 </div>
-            `).join('');
+            `}).join('');
 
             const debts = {};
             orders.forEach(o => debts[o.table_number] = (debts[o.table_number] || 0) + (o.total || 0));
@@ -84,10 +92,13 @@
             `).join('');
         }
 
-        async function updateStatus(id, newStatus) {
-            // Ép kiểu ID thành số nguyên để tránh lỗi null constraint
-            const { error } = await supabaseClient.from('orders').update({ status: newStatus }).eq('id', parseInt(id));
-            if (error) alert("Lỗi: " + error.message);
+        async function updateStatus(orderId, status) {
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ status: status })
+                .eq('id', parseInt(orderId)); // Ép kiểu số tránh lỗi null constraint
+
+            if (error) alert("Lỗi Database: " + error.message);
             else loadInitialData();
         }
 
