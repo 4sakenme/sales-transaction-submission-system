@@ -7,17 +7,148 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* 🎨 HỆ THỐNG CSS LAYOUT TOÀN DIỆN - CHỐNG VỠ GIAO DIỆN */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fcf8f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background: #4e3629;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
+        header nav { margin-top: 8px; }
+        header nav a { color: #f5ece5; text-decoration: none; font-weight: bold; font-size: 14px; }
+
+        .waiter-container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        /* Khối danh sách món ăn bên trái */
+        .menu-section {
+            flex: 1.7;
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            box-sizing: border-box;
+        }
+        .menu-section h2 { margin-top: 0; color: #4e3629; font-size: 20px; border-bottom: 2px solid #f5ece5; padding-bottom: 8px; }
+
+        /* Khối giỏ hàng bên phải */
+        .cart-section {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px solid #e7a460;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+            box-shadow: 0 4px 16px rgba(231, 164, 96, 0.1);
+            box-sizing: border-box;
+        }
+        .cart-section h2 { margin-top: 0; color: #e67e22; font-size: 20px; }
+
+        /* Thanh tìm kiếm */
+        #search-bar {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.2s;
+        }
+        #search-bar:focus { border-color: #e7a460; box-shadow: 0 0 0 3px rgba(231, 164, 96, 0.2); }
+
         /* Giao diện thanh danh mục */
         .category-tabs {
-            display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 15px;
+            display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px;
             scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
         }
         .category-tabs::-webkit-scrollbar { display: none; }
         .tab-btn {
-            background: #e0d7cf; border: none; padding: 10px 16px; border-radius: 20px;
-            font-weight: bold; color: #4e3629; cursor: pointer; white-space: nowrap; font-size: 14px;
+            background: #e0d7cf; border: none; padding: 10px 18px; border-radius: 20px;
+            font-weight: bold; color: #4e3629; cursor: pointer; white-space: nowrap; font-size: 13px;
+            transition: 0.2s;
         }
-        .tab-btn.active { background: #e7a460; color: white; box-shadow: 0 2px 8px rgba(231, 164, 96, 0.4); }
+        .tab-btn.active { background: #e7a460; color: white; box-shadow: 0 4px 10px rgba(231, 164, 96, 0.35); }
+
+        /* Grid hiển thị danh sách món ăn */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .menu-item {
+            background: #fff8f2;
+            border: 1px solid #eddcd0;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 90px;
+        }
+        .menu-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 14px rgba(78, 54, 41, 0.12);
+            border-color: #e7a460;
+        }
+        .menu-item h4 { margin: 0 0 8px 0; color: #4e3629; font-size: 15px; line-height: 1.4; }
+        .money { color: #e67e22; font-weight: bold; margin: 0; font-size: 15px; }
+
+        /* Thành phần nhập số bàn & xử lý đơn */
+        .table-input { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: #fafafa; padding: 10px; border-radius: 8px; }
+        .table-input label { font-weight: bold; color: #4e3629; }
+        .table-input input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 15px; outline: none; }
+        .table-input input:focus { border-color: #e7a460; }
+
+        .cart-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px dashed #eee;
+            font-size: 14px;
+        }
+        .cart-item-info { flex: 1; padding-right: 10px; color: #4e3629; }
+        .cart-item-qty { display: flex; align-items: center; gap: 8px; margin-right: 15px; }
+        
+        .btn-qty { 
+            background: #e0d7cf; border: none; color: #4e3629; padding: 4px 10px; 
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; 
+        }
+        .btn-qty:hover { background: #e7a460; color: white; }
+        
+        .cart-total { margin-top: 20px; border-top: 2px solid #eee; padding-top: 15px; }
+        .cart-total h3 { display: flex; justify-content: space-between; margin: 0 0 15px 0; font-size: 18px; color: #333; }
+        
+        .btn-submit {
+            width: 100%; background: #27ae60; color: white; border: none; padding: 14px;
+            border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+        .btn-submit:hover { background: #219653; }
+        .btn-submit:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
 
         /* 🎪 GIAO DIỆN POPUP CHỌN OPTION */
         .modal-overlay {
@@ -25,20 +156,28 @@
             background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
         }
         .modal-box {
-            background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 340px;
-            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: white; padding: 22px; border-radius: 16px; width: 90%; max-width: 350px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.25);
         }
-        .modal-box h3 { margin-top: 0; color: #4e3629; }
+        .modal-box h3 { margin-top: 0; color: #4e3629; font-size: 18px; margin-bottom: 15px; }
         .option-group { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
         .option-btn {
-            background: #f5f5f5; border: 2px solid #ddd; padding: 12px; border-radius: 8px;
-            font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; display: flex; justify-content: space-between;
+            background: #f9f9f9; border: 2px solid #eef0f2; padding: 12px 15px; border-radius: 10px;
+            font-size: 15px; font-weight: bold; cursor: pointer; text-align: left; display: flex; justify-content: space-between;
+            transition: 0.2s; color: #555;
         }
         .option-btn.selected { border-color: #27ae60; background: #e8f8f0; color: #27ae60; }
-        .modal-actions { display: flex; gap: 10px; }
-        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .modal-actions { display: flex; gap: 12px; }
+        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
         .btn-cancel { background: #e0e0e0; color: #333; }
         .btn-confirm { background: #27ae60; color: white; }
+
+        /* RESPONSIVE TRÊN ĐIỆN THOẠI */
+        @media (max-width: 768px) {
+            .waiter-container { flex-direction: column; padding: 10px; }
+            .menu-section, .cart-section { flex: none; width: 100%; }
+            .cart-section { position: static; }
+        }
     </style>
 </head>
 <body>
@@ -55,18 +194,18 @@
             <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
             
             <div class="category-tabs">
-                <button class="tab-btn active" onclick="switchCategory('ALL')">✨ Tất cả</button>
-                <button class="tab-btn" onclick="switchCategory('TRÀ')">🍵 Các loại Trà</button>
-                <button class="tab-btn" onclick="switchCategory('CÀ PHÊ')">☕ Cà phê</button>
-                <button class="tab-btn" onclick="switchCategory('TRÀ SỮA')">🧋 Trà sữa</button>
-                <button class="tab-btn" onclick="switchCategory('SỮA TƯƠI')">🥛 Sữa tươi</button>
-                <button class="tab-btn" onclick="switchCategory('SODA')">🍹 Soda</button>
-                <button class="tab-btn" onclick="switchCategory('NƯỚC ÉP')">🍹 Nước ép</button>
-                <button class="tab-btn" onclick="switchCategory('MATCHA')">🟢 Matcha</button>
-                <button class="tab-btn" onclick="switchCategory('SỮA CHUA')">🍧 Sữa chua</button>
-                <button class="tab-btn" onclick="switchCategory('CACAO')">🍫 Cacao</button>
-                <button class="tab-btn" onclick="switchCategory('ĐỒ NÓNG')">🔥 Đồ nóng</button>
-                <button class="tab-btn" onclick="switchCategory('ĂN VẶT')">🍟 Ăn vặt</button>
+                <button class="tab-btn active" onclick="switchCategory('ALL', event)">✨ Tất cả</button>
+                <button class="tab-btn" onclick="switchCategory('TRÀ', event)">🍵 Các loại Trà</button>
+                <button class="tab-btn" onclick="switchCategory('CÀ PHÊ', event)">☕ Cà phê</button>
+                <button class="tab-btn" onclick="switchCategory('TRÀ SỮA', event)">🧋 Trà sữa</button>
+                <button class="tab-btn" onclick="switchCategory('SỮA TƯƠI', event)">🥛 Sữa tươi</button>
+                <button class="tab-btn" onclick="switchCategory('SODA', event)">🍹 Soda</button>
+                <button class="tab-btn" onclick="switchCategory('NƯỚC ÉP', event)">🍹 Nước ép</button>
+                <button class="tab-btn" onclick="switchCategory('MATCHA', event)">🟢 Matcha</button>
+                <button class="tab-btn" onclick="switchCategory('SỮA CHUA', event)">🍧 Sữa chua</button>
+                <button class="tab-btn" onclick="switchCategory('CACAO', event)">🍫 Cacao</button>
+                <button class="tab-btn" onclick="switchCategory('ĐỒ NÓNG', event)">🔥 Đồ nóng</button>
+                <button class="tab-btn" onclick="switchCategory('ĂN VẶT', event)">🍟 Ăn vặt</button>
             </div>
 
             <div id="menu-grid" class="menu-grid"></div>
@@ -80,7 +219,7 @@
             </div>
             <div id="cart-items"></div>
             <div class="cart-total">
-                <h3>Tổng cộng: <span id="cart-total-price" class="money">0</span> đ</h3>
+                <h3><span>Tổng cộng:</span> <span id="cart-total-price" class="money">0</span> đ</h3>
                 <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp</button>
             </div>
         </section>
@@ -99,12 +238,11 @@
 
     <script>
         // =========================================================
-        // 🔑 KẾT NỐI SUPABASE CHUẨN XÁC (Đã sửa lỗi khai báo trùng lặp biến)
+        // 🔑 KẾT NỐI SUPABASE CHUẨN XÁC
         // =========================================================
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         
-        // Đổi tên thành supabaseClient chống crash app
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let menu = [];
@@ -220,6 +358,7 @@
             if (!cart[uniqueKey]) {
                 cart[uniqueKey] = {
                     id: item.id,
+                    key: uniqueKey, // Lưu trữ hẳn UniqueKey để định vị chính xác khi tăng giảm số lượng
                     name: item.name + suffix,
                     price: item.price + priceDelta, 
                     quantity: 1
@@ -241,17 +380,15 @@
             const container = document.getElementById('cart-items');
             let total = 0;
             
-            // Xử lý logic bóc tách key động mượt mà để nút tăng giảm số lượng hoạt động chính xác
             container.innerHTML = Object.values(cart).map(item => {
                 total += item.price * item.quantity;
-                const key = item.id + (item.name.includes('(') ? ` (${item.name.split('(')[1]}` : '');
                 return `
                     <div class="cart-row">
-                        <div><strong>${item.name}</strong></div>
-                        <div>
-                            <button class="btn-qty" onclick="changeQty('${key}', -1)">-</button>
-                            <span> ${item.quantity} </span>
-                            <button class="btn-qty" onclick="changeQty('${key}', 1)">+</button>
+                        <div class="cart-item-info"><strong>${item.name}</strong></div>
+                        <div class="cart-item-qty">
+                            <button class="btn-qty" onclick="changeQty('${item.key}', -1)">-</button>
+                            <span><strong>${item.quantity}</strong></span>
+                            <button class="btn-qty" onclick="changeQty('${item.key}', 1)">+</button>
                         </div>
                         <div class="money">${(item.price * item.quantity).toLocaleString()} đ</div>
                     </div>
@@ -260,11 +397,14 @@
             document.getElementById('cart-total-price').innerText = total.toLocaleString();
         }
 
-        function switchCategory(category) {
+        // Đã sửa triệt để lỗi không nhận diện tham số e (event) trên trình duyệt
+        function switchCategory(category, event) {
             currentCategory = category;
             const buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if(event && event.target) {
+                event.target.classList.add('active');
+            }
             renderMenu();
         }
 
