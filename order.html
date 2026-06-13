@@ -122,21 +122,25 @@
         .table-input { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
         .table-input input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; }
 
-        .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #eee; }
-        .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-submit { width: 100%; background: #27ae60; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+        /* Giao diện danh sách giỏ hàng & ô Nhập ghi chú mới */
+        .cart-row { padding: 12px 0; border-bottom: 1px dashed #eddcd0; }
+        .cart-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .cart-note-input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #e0d7cf;
+            border-radius: 6px;
+            font-size: 12px;
+            box-sizing: border-box;
+            background: #fffdfb;
+            outline: none;
+            color: #666;
+        }
+        .cart-note-input:focus { border-color: #e7a460; background: #fff; }
 
-        /* POPUP OPTIONS */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-box { background: white; padding: 22px; border-radius: 16px; width: 90%; max-width: 350px; text-align: center; }
-        .option-group { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
-        .option-btn { background: #f9f9f9; border: 2px solid #eef0f2; padding: 12px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; }
-        .option-btn.selected { border-color: #27ae60; background: #e8f8f0; color: #27ae60; }
-        .modal-actions { display: flex; gap: 12px; }
-        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-cancel { background: #e0e0e0; }
-        .btn-confirm { background: #27ae60; color: white; }
+        .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-submit { width: 100%; background: #27ae60; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; }
+        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
 
         @media (max-width: 768px) {
             .waiter-container { flex-direction: column; padding: 10px; }
@@ -187,17 +191,6 @@
         </section>
     </main>
 
-    <div class="modal-overlay" id="option-modal">
-        <div class="modal-box">
-            <h3 id="modal-item-name">Tùy chọn món</h3>
-            <div class="option-group" id="modal-options-container"></div>
-            <div class="modal-actions">
-                <button class="btn-modal btn-cancel" onclick="closeModal()">Hủy</button>
-                <button class="btn-modal btn-confirm" onclick="confirmAddToCart()">Thêm vào đơn</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
@@ -207,10 +200,6 @@
         let menu = [];
         let cart = {};
         let currentCategory = 'ALL';
-        
-        let tempItem = null;
-        let selectedOptionName = '';
-        let selectedOptionPriceDelta = 0;
 
         async function loadMenu() {
             const grid = document.getElementById('menu-grid');
@@ -223,7 +212,6 @@
                     grid.innerHTML = `
                         <div style='grid-column: 1/-1; padding: 15px; background: #fdf2f2; color: #9b1c1c; border-radius: 8px;'>
                             <strong>❌ Lỗi bảo mật hoặc cấu hình Supabase:</strong> ${error.message}<br>
-                            <small>Mẹo: Hãy chắc chắn bạn đã kích hoạt hoặc tạo Policy ALLOW SELECT cho bảng "menu" trên Supabase!</small>
                         </div>`;
                     return;
                 }
@@ -254,101 +242,45 @@
             }
 
             grid.innerHTML = filteredItems.map(item => `
-                <div class="menu-item" onclick="handleItemClick(${item.id})">
+                <div class="menu-item" onclick="addToCart(${item.id})">
                     <h4>${item.name}</h4>
                     <p class="money">${Number(item.price || 0).toLocaleString()} đ</p>
                 </div>
             `).join('');
         }
 
-        function handleItemClick(id) {
+        // Bỏ hoàn toàn Popup Topping cũ, click là ăn trực tiếp vào giỏ hàng luôn
+        function addToCart(id) {
             const item = menu.find(m => m.id === id);
-            if(!item) return;
-            tempItem = item;
-            
-            const container = document.getElementById('modal-options-container');
-            container.innerHTML = ''; 
-            document.getElementById('modal-item-name').innerText = item.name;
+            if (!item) return;
 
-            const itemCategoryNormalized = (item.category || '').toString().toUpperCase().trim();
-
-            if (item.name.toUpperCase().includes('COMBO')) {
-                selectedOptionName = 'Chiên thường';
-                selectedOptionPriceDelta = 0;
-                container.innerHTML = `
-                    <button class="option-btn selected" id="opt-1" onclick="changeActiveOption('Chiên thường', 0, 'opt-1')"><span>🍟 Chiên thường</span> <span>+0đ</span></button>
-                    <button class="option-btn" id="opt-2" onclick="changeActiveOption('Chiên mắm', 0, 'opt-2')"><span>🍯 Chiên mắm</span> <span>+0đ</span></button>
-                `;
-                document.getElementById('option-modal').style.display = 'flex';
-            } else if (['TRÀ', 'MATCHA', 'CACAO', 'TRÀ SỮA', 'SỮA TƯƠI'].includes(itemCategoryNormalized)) {
-                selectedOptionName = 'Thường';
-                selectedOptionPriceDelta = 0;
-
-                let toppingPrice = (itemCategoryNormalized === 'TRÀ' || itemCategoryNormalized === 'TRÀ SỮA') ? 5000 : 4000;
-                let toppingHtml = '';
-                
-                if (['MATCHA', 'CACAO'].includes(itemCategoryNormalized)) {
-                    toppingHtml = `
-                        <button class="option-btn" id="opt-k2" onclick="changeActiveOption('Kem trứng', 5000, 'opt-k2')"><span>🥚 Thêm Kem Trứng</span> <span>+5.000đ</span></button>
-                        <button class="option-btn" id="opt-k3" onclick="changeActiveOption('Kem muối', 5000, 'opt-k3')"><span>🧂 Thêm Kem Muối</span> <span>+5.000đ</span></button>
-                    `;
-                } else {
-                    toppingHtml = `
-                        <button class="option-btn" id="opt-k2" onclick="changeActiveOption('Kem sữa', ${toppingPrice}, 'opt-k2')"><span>🥛 Thêm Kem Sữa</span> <span>+${toppingPrice.toLocaleString()}đ</span></button>
-                    `;
-                }
-
-                container.innerHTML = `
-                    <button class="option-btn selected" id="opt-k1" onclick="changeActiveOption('Thường', 0, 'opt-k1')"><span>🥤 Món bình thường</span> <span>+0đ</span></button>
-                    ${toppingHtml}
-                `;
-                document.getElementById('option-modal').style.display = 'flex';
-            } else {
-                executeAddToCart(item, '', 0);
-            }
-        }
-
-        function changeActiveOption(name, priceDelta, btnId) {
-            selectedOptionName = name;
-            selectedOptionPriceDelta = priceDelta;
-            const buttons = document.querySelectorAll('.option-btn');
-            buttons.forEach(btn => btn.classList.remove('selected'));
-            document.getElementById(btnId).classList.add('selected');
-        }
-
-        function closeModal() {
-            document.getElementById('option-modal').style.display = 'none';
-            tempItem = null;
-        }
-
-        function confirmAddToCart() {
-            if (tempItem) {
-                let suffix = (selectedOptionName === 'Thường' || selectedOptionName === 'Chiên thường') ? '' : ` (${selectedOptionName})`;
-                executeAddToCart(tempItem, suffix, selectedOptionPriceDelta);
-            }
-            closeModal();
-        }
-
-        function executeAddToCart(item, suffix, priceDelta) {
-            const uniqueKey = item.id + suffix;
-            if (!cart[uniqueKey]) {
-                cart[uniqueKey] = {
-                    key: uniqueKey,
-                    name: item.name + suffix,
-                    price: Number(item.price || 0) + priceDelta, 
-                    quantity: 1
+            // Sử dụng id làm key duy nhất trong giỏ hàng
+            if (!cart[id]) {
+                cart[id] = {
+                    id: id,
+                    name: item.name,
+                    price: Number(item.price || 0),
+                    quantity: 1,
+                    note: '' // Tạo sẵn thuộc tính ghi chú trống
                 };
             } else {
-                cart[uniqueKey].quantity += 1;
+                cart[id].quantity += 1;
             }
             renderCart();
         }
 
-        function changeQty(uniqueKey, delta) {
-            if (!cart[uniqueKey]) return;
-            cart[uniqueKey].quantity += delta;
-            if (cart[uniqueKey].quantity <= 0) delete cart[uniqueKey];
+        function changeQty(id, delta) {
+            if (!cart[id]) return;
+            cart[id].quantity += delta;
+            if (cart[id].quantity <= 0) delete cart[id];
             renderCart();
+        }
+
+        // Đồng bộ chữ nhập từ ô Note vào biến lưu trữ giỏ hàng
+        function updateNote(id, text) {
+            if (cart[id]) {
+                cart[id].note = text.trim();
+            }
         }
 
         function renderCart() {
@@ -359,13 +291,17 @@
                 total += item.price * item.quantity;
                 return `
                     <div class="cart-row">
-                        <div style="flex:1;"><strong>${item.name}</strong></div>
-                        <div style="margin-right:15px;">
-                            <button class="btn-qty" onclick="changeQty('${item.key}', -1)">-</button>
-                            <span>${item.quantity}</span>
-                            <button class="btn-qty" onclick="changeQty('${item.key}', 1)">+</button>
+                        <div class="cart-row-top">
+                            <div style="flex:1;"><strong>${item.name}</strong></div>
+                            <div style="margin-right:15px;">
+                                <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
+                                <span style="display:inline-block; width:20px; text-align:center;">${item.quantity}</span>
+                                <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
+                            </div>
+                            <div class="money">${(item.price * item.quantity).toLocaleString()} đ</div>
                         </div>
-                        <div class="money">${(item.price * item.quantity).toLocaleString()} đ</div>
+                        <input type="text" class="cart-note-input" placeholder="💡 Thêm ghi chú (ít đá, không đường, vị...)" 
+                               value="${item.note || ''}" oninput="updateNote(${item.id}, this.value)">
                     </div>
                 `;
             }).join('');
@@ -382,9 +318,7 @@
 
         function filterMenu() { renderMenu(); }
 
-        // =========================================================
-        // 🚀 HÀM GỬI ĐƠN ĐÃ ĐƯỢC SỬA LỖI (Bỏ hoàn toàn tham số "id")
-        // =========================================================
+        // Gửi đơn hàng sang bếp kèm theo ghi chú đầy đủ
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
@@ -393,17 +327,21 @@
             const btnSubmit = document.querySelector('.btn-submit');
             btnSubmit.disabled = true;
 
-            const items = Object.values(cart).map(i => `${i.name} (x${i.quantity})`);
+            // Định dạng chuỗi món ăn: Món + Ghi chú (nếu có) + Số lượng
+            const items = Object.values(cart).map(i => {
+                const noteText = i.note ? ` (${i.note})` : '';
+                return `${i.name}${noteText} (x${i.quantity})`;
+            });
+            
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
             try {
-                // ĐÃ SỬA: Chỉ gửi các cột nghiệp vụ, hoàn toàn KHÔNG truyền trường id từ client
                 const { error } = await supabaseClient.from('orders').insert([
                     { table_number: table, items: items, total: total, status: 'pending' }
                 ]);
 
                 if (!error) {
-                    alert("🚀 Gửi đơn thành công!");
+                    alert("🚀 Gửi đơn sang Bếp thành công!");
                     cart = {};
                     document.getElementById('table-number').value = '';
                     renderCart();
