@@ -6,330 +6,99 @@
     <title>👩‍🍳 Quản lý - Chủ quán / Bếp</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* 🎨 HỆ THỐNG CSS ĐỒNG BỘ TÔNG MÀU QUÁN COFFEE POS */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #fcf8f5;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-
-        header {
-            background: #4e3629;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
-        
-        .btn-back {
-            position: absolute;
-            left: 20px;
-            top: 16px;
-            background: #e7a460;
-            color: white;
-            text-decoration: none;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-        .btn-back:hover { background: #d68f4b; }
-
-        /* Thanh doanh thu tổng */
-        .revenue-bar {
-            background: #fff;
-            border-bottom: 2px solid #eddcd0;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
-        .revenue-bar h3 { margin: 0; color: #4e3629; font-size: 18px; }
-        .money-large { color: #27ae60; font-size: 24px; font-weight: bold; margin: 0 5px; }
-
-        /* Bố cục chính chia đôi màn hình */
-        .admin-main-layout {
-            display: flex;
-            gap: 20px;
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-            box-sizing: border-box;
-        }
-        
-        /* Cột trái: Nhà Bếp */
-        .bep-section {
-            flex: 1.6;
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            box-sizing: border-box;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-        .bep-section h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #fdf2f2; }
-
-        /* Cột phải: Thu Ngân Tính Tiền */
-        .thungon-section {
-            flex: 1;
-            background: #fffdfb;
-            padding: 20px;
-            border-radius: 16px;
-            border: 2px solid #e7a460;
-            height: fit-content;
-            position: sticky;
-            top: 20px;
-            box-sizing: border-box;
-            box-shadow: 0 4px 16px rgba(231, 164, 96, 0.08);
-        }
-        .thungon-section h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #e7a460; }
-        
-        /* CSS chi tiết thẻ đơn hàng ở bếp */
-        .order-card {
-            border-left: 6px solid #e67e22; /* Cam - Đang chờ */
-            margin-bottom: 15px;
-            background: #fffbf7;
-            padding: 18px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-            border-top: 1px solid #eddcd0;
-            border-right: 1px solid #eddcd0;
-            border-bottom: 1px solid #eddcd0;
-        }
-        .order-card.cooking { border-left-color: #3498db; background: #f7faff; } /* Xanh dương - Đang làm */
-        
-        .order-card h3 { margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; }
-        .item-list { padding-left: 20px; margin: 0 0 15px 0; }
-        .item-list li { padding: 4px 0; font-size: 15px; color: #4e3629; }
-
-        /* Nút bấm tiến độ Nhà Bếp */
-        .btn-status {
-            border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn-cook { background: #e67e22; color: white; }
-        .btn-cook:hover { background: #d35400; }
-        
-        /* CSS cho hàng tính tiền quầy Thu Ngân */
-        .table-debt-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px;
-            background: white;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-            border: 1px solid #eddcd0;
-        }
-        .btn-pay-table {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            transition: 0.2s;
-        }
-        .btn-pay-table:hover { background: #219653; }
-        
-        .no-data {
-            color: #999;
-            text-align: center;
-            font-style: italic;
-            padding: 20px;
-            font-size: 14px;
-        }
-
-        /* Responsive di động */
-        @media (max-width: 768px) {
-            .admin-main-layout { flex-direction: column; padding: 10px; }
-            .bep-section, .thungon-section { width: 100%; position: static; }
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fcf8f5; margin: 0; padding: 0; color: #333; }
+        header { background: #4e3629; color: white; padding: 15px 20px; text-align: center; }
+        .btn-back { position: absolute; left: 20px; top: 16px; background: #e7a460; color: white; text-decoration: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; }
+        .revenue-bar { background: #fff; border-bottom: 2px solid #eddcd0; padding: 15px; text-align: center; }
+        .money-large { color: #27ae60; font-size: 24px; font-weight: bold; }
+        .admin-main-layout { display: flex; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .bep-section { flex: 1.6; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .thungon-section { flex: 1; background: #fffdfb; padding: 20px; border-radius: 16px; border: 2px solid #e7a460; height: fit-content; }
+        .order-card { border-left: 6px solid #e67e22; margin-bottom: 15px; background: #fffbf7; padding: 15px; border-radius: 12px; border: 1px solid #eddcd0; }
+        .btn-status { border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; color: white; margin-top: 10px; }
+        .table-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eddcd0; }
+        .btn-pay-table { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
+        @media (max-width: 768px) { .admin-main-layout { flex-direction: column; } }
     </style>
 </head>
 <body>
     <header>
         <a href="index.html" class="btn-back">⬅️ Cổng chào</a>
-        <h1>👩‍🍳 KHU VỰC CHỦ QUÁN (BẾP & THU NGÂN)</h1>
+        <h1>👩‍🍳 KHU VỰC CHỦ QUÁN</h1>
     </header>
 
     <div class="revenue-bar">
-        <h3>💰 Doanh thu thực tế đã thu hôm nay (<span id="today-date">--/--/----</span>): <span id="today-revenue" class="money-large">0</span> đ</h3>
+        <h3>💰 Doanh thu hôm nay: <span id="today-revenue" class="money-large">0</span> đ</h3>
     </div>
 
     <main class="admin-main-layout">
-        
         <section class="bep-section">
-            <h2 style="color: #c0392b;">🔥 ĐƠN HÀNG CHỜ CHẾ BIẾN</h2>
-            <div id="orders-list" class="orders-list"></div>
+            <h2 style="color: #c0392b;">🔥 ĐƠN HÀNG CHỜ</h2>
+            <div id="orders-list"></div>
         </section>
-
         <section class="thungon-section">
-            <h2 style="color: #27ae60; text-align: center; margin-top: 0;">📋 BẢNG TÍNH TIỀN THEO BÀN</h2>
-            <p style="font-size: 13px; color: #666; text-align: center; margin-bottom: 15px;">(Tự động gộp tiền tất cả các lần gọi món của khách)</p>
+            <h2 style="color: #27ae60; text-align: center;">📋 BẢNG TÍNH TIỀN</h2>
             <div id="table-debts-list"></div>
         </section>
-
     </main>
 
     <script>
-        // =========================================================
-        // 🔑 CẤU HÌNH KẾT NỐI SUPABASE CHUẨN ĐỒNG BỘ 100%
-        // =========================================================
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        // Đã cập nhật lại đầy đủ Key ẩn danh chính xác của bạn
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
-        const CHU_QUAN_PASSCODE = "beut123"; 
-
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            global: { headers: { 'x-passcode': CHU_QUAN_PASSCODE } }
-        });
-
-        let activeOrders = [];
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function loadInitialData() {
-            // Lấy dữ liệu từ Supabase
-            const { data: orders, error } = await supabaseClient
-                .from('orders')
-                .select('*')
-                .not('status', 'eq', 'paid') // Lọc bỏ đơn đã thanh toán
-                .order('id', { ascending: false });
-                
-            if (error) {
-                console.error("Lỗi kết nối database:", error);
-                return;
-            }
-                
-            activeOrders = orders || [];
-            console.log("Số đơn lấy được từ DB:", activeOrders.length);
+            const { data: orders, error } = await supabaseClient.from('orders').select('*');
+            if (error) { console.error(error); return; }
             
-            // Render giao diện
-            renderBepOrders();   
-            renderTableDebts();  
-
-            // Tải tổng doanh thu ngày hôm nay (Đặt vào trong hàm này để dữ liệu luôn tươi mới)
+            const activeOrders = orders.filter(o => o.status !== 'paid');
+            renderOrders(activeOrders);
+            
             const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
-            document.getElementById('today-date').innerText = today;
-            
             const { data: revData } = await supabaseClient.from('revenue').select('total').eq('date', today).maybeSingle();
             document.getElementById('today-revenue').innerText = revData ? revData.total.toLocaleString() : "0";
         }
 
-        // Hiển thị đơn lẻ tại bếp (chỉ lấy đơn dạng 'pending' hoặc 'cooking')
-        function renderBepOrders() {
+        function renderOrders(orders) {
             const list = document.getElementById('orders-list');
-            const bepOrders = activeOrders.filter(o => o.status === 'pending' || o.status === 'cooking');
+            const debtList = document.getElementById('table-debts-list');
 
-            if (bepOrders.length === 0) {
-                list.innerHTML = "<p class='no-data'>🎉 Bếp đã làm xong hết đồ, không có đơn chờ!</p>";
-                return;
-            }
+            list.innerHTML = orders.map(o => `
+                <div class="order-card">
+                    <h3>📍 Bàn: ${o.table_number}</h3>
+                    <p>Trạng thái: ${o.status}</p>
+                    <button class="btn-status" style="background:${o.status === 'pending' ? '#e67e22' : '#3498db'}" 
+                        onclick="updateStatus(${o.id}, '${o.status === 'pending' ? 'cooking' : 'done'}')">
+                        ${o.status === 'pending' ? '🍳 Bắt đầu làm' : '✅ Xong'}
+                    </button>
+                </div>
+            `).join('');
 
-            list.innerHTML = bepOrders.map(order => {
-                const timeStr = new Date(order.id).toLocaleTimeString('vi-VN');
-                const isPending = order.status === 'pending';
-                return `
-                    <div class="order-card ${order.status}">
-                        <h3>
-                            <span style="color: #4e3629; font-weight: bold;">📍 ${order.table_number}</span>
-                            <span style="font-size:13px; color:#888;">🕒 ${timeStr}</span>
-                        </h3>
-                        <ul class="item-list">
-                            ${order.items.map(item => `<li>✨ <strong>${item}</strong></li>`).join('')}
-                        </ul>
-                        <p style="font-size: 14px; color: #555; margin-top: 10px;">
-                            Trạng thái: <strong>${isPending ? '⏳ Đang chờ làm' : '👨‍🍳 Đang chế biến...'}</strong>
-                        </p>
-                        <div style="margin-top: 12px;">
-                            ${isPending ? 
-                                `<button class="btn-status btn-cook" onclick="updateStatus(${order.id}, 'cooking')">🍳 Bắt đầu làm món</button>` : 
-                                `<button class="btn-status" style="background:#27ae60; color:white;" onclick="updateStatus(${order.id}, 'done_cooking')">✅ Đã làm xong đồ</button>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            const debts = {};
+            orders.forEach(o => debts[o.table_number] = (debts[o.table_number] || 0) + (o.total || 0));
+            debtList.innerHTML = Object.keys(debts).map(t => `
+                <div class="table-debt-row">
+                    <span>Bàn ${t}: <strong>${debts[t].toLocaleString()}đ</strong></span>
+                    <button class="btn-pay-table" onclick="payTable('${t}', ${debts[t]})">💵 Thu tiền</button>
+                </div>
+            `).join('');
         }
 
-        // Gom nhóm toàn bộ hóa đơn nợ theo bàn tự động ở quầy thu ngân
-        function renderTableDebts() {
-            const container = document.getElementById('table-debts-list');
-            
-            const debtsByTable = {};
-            activeOrders.forEach(order => {
-                const table = order.table_number;
-                if (!debtsByTable[table]) {
-                    debtsByTable[table] = 0;
-                }
-                debtsByTable[table] += order.total;
-            });
-
-            const tableKeys = Object.keys(debtsByTable);
-            if (tableKeys.length === 0) {
-                container.innerHTML = "<p class='no-data'>Hiện tại không có bàn nào đang nợ tiền.</p>";
-                return;
-            }
-
-            container.innerHTML = tableKeys.map(table => {
-                const totalDebt = debtsByTable[table];
-                return `
-                    <div class="table-debt-row">
-                        <div>
-                            <span style="font-size: 16px; font-weight: bold; color: #4e3629;">📍 ${table}</span>
-                            <div style="font-size: 15px; color: #e74c3c; font-weight: bold; margin-top: 4px;">
-                                Tổng nợ: ${totalDebt.toLocaleString()} đ
-                            </div>
-                        </div>
-                        <button class="btn-pay-table" onclick="payWholeTable('${table}', ${totalDebt})">💵 Thu tiền</button>
-                    </div>
-                `;
-            }).join('');
+        async function updateStatus(id, newStatus) {
+            // Ép kiểu ID thành số nguyên để tránh lỗi null constraint
+            const { error } = await supabaseClient.from('orders').update({ status: newStatus }).eq('id', parseInt(id));
+            if (error) alert("Lỗi: " + error.message);
+            else loadInitialData();
         }
 
-        // Thay đổi tiến độ bếp
-        async function updateStatus(orderId, status) {
-            await supabaseClient.from('orders').update({ status: status }).eq('id', orderId);
-            loadInitialData();
+        async function payTable(table, amount) {
+            if(!confirm("Thu tiền bàn " + table + "?")) return;
+            const { error } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
+            if (error) alert("Lỗi: " + error.message);
+            else loadInitialData();
         }
 
-        // Xử lý thu tiền, gộp hóa đơn và đồng bộ doanh thu cuối ngày
-        async function payWholeTable(tableNumber, totalAmount) {
-            if (!confirm(`Xác nhận thu tổng số tiền ${totalAmount.toLocaleString()} đ của [${tableNumber}] và tiễn khách?`)) return;
-
-            const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
-            
-            // 1. Đồng bộ doanh thu ngày
-            const { data: currentRev } = await supabaseClient.from('revenue').select('total').eq('date', today).maybeSingle();
-            const newTotal = (currentRev ? currentRev.total : 0) + totalAmount;
-            await supabaseClient.from('revenue').upsert({ date: today, total: newTotal });
-            
-            // 2. Chuyển trạng thái đơn hàng sang đã thanh toán 'paid'
-            await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', tableNumber).not('status', 'eq', 'paid');
-            
-            alert(`✅ Đã thanh toán xong cho ${tableNumber}! Số tiền đã được tính vào doanh thu.`);
-            loadInitialData();
-        }
-
-        // Lắng nghe Realtime cập nhật tức thì khi có biến động từ bàn phục vụ gửi sang
-        supabaseClient
-          .channel('orders-realtime')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-              loadInitialData(); 
-          })
-          .subscribe();
-
+        supabaseClient.channel('realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadInitialData).subscribe();
         window.onload = loadInitialData;
     </script>
 </body>
