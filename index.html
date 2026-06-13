@@ -238,7 +238,7 @@
 
     <script>
         // =========================================================
-        // 🔑 KẾT NỐI SUPABASE CHUẨN XÁC
+        // 🔑 KẾT NỐI SUPABASE CHUẨN XÁC 
         // =========================================================
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
@@ -254,42 +254,77 @@
         let selectedOptionPriceDelta = 0;
 
         async function loadMenu() {
-            const { data, error } = await supabaseClient.from('menu').select('*');
-            if (error) return alert("Không thể tải menu!");
-            menu = data;
-            renderMenu();
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #e67e22;'>⏳ Đang tải dữ liệu từ Supabase...</p>";
+            
+            try {
+                const { data, error } = await supabaseClient.from('menu').select('*');
+                
+                if (error) {
+                    console.error("Supabase Error Details:", error);
+                    grid.innerHTML = `
+                        <div style='grid-column: 1/-1; padding: 20px; background: #fdf2f2; border: 1px solid #f8b4b4; border-radius: 8px; color: #9b1c1c;'>
+                            <strong>❌ Lỗi Supabase:</strong> ${error.message}<br>
+                            <small>Mã lỗi: ${error.code || 'N/A'}. Vui lòng kiểm tra lại tên bảng 'menu' hoặc phân quyền Row Level Security (RLS) trên Supabase.</small>
+                        </div>`;
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #d97706;'>⚠ Bảng 'menu' kết nối thành công nhưng hoàn toàn trống (0 món)!</p>";
+                    return;
+                }
+
+                menu = data;
+                console.log("Dữ liệu menu tải về thành công:", menu);
+                renderMenu();
+            } catch (err) {
+                console.error("Lỗi crash hệ thống:", err);
+                grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: red;'>❌ Lỗi bất ngờ: " + err.message + "</p>";
+            }
         }
 
         function renderMenu() {
             const grid = document.getElementById('menu-grid');
-            const searchText = document.getElementById('search-bar').value.toLowerCase();
+            const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
 
             const filteredItems = menu.filter(item => {
-                const matchCategory = (currentCategory === 'ALL' || item.category === currentCategory);
-                const matchSearch = item.name.toLowerCase().includes(searchText);
+                // Chuẩn hóa danh mục: xóa khoảng trắng, chuyển chữ thường để so sánh chính xác chống lệch hoa thường
+                const itemCat = (item.category || '').toString().toUpperCase().trim();
+                const targetCat = currentCategory.toUpperCase().trim();
+                
+                const matchCategory = (targetCat === 'ALL' || itemCat === targetCat);
+                const matchSearch = (item.name || '').toLowerCase().includes(searchText);
                 return matchCategory && matchSearch;
             });
 
             if (filteredItems.length === 0) {
-                grid.innerHTML = "<p style='grid-column: 1/-1; color: #888; text-align: center; margin-top:20px;'>Không tìm thấy món.</p>";
+                grid.innerHTML = `
+                    <div style='grid-column: 1/-1; text-align: center; color: #888; padding: 20px;'>
+                        <p>Không tìm thấy món nào thuộc mục <strong>"${currentCategory}"</strong>.</p>
+                        <small style="color: #bbb;">Mẹo: Kiểm tra cột 'category' trong Database xem có viết khớp chữ in hoa/thường không.</small>
+                    </div>`;
                 return;
             }
 
             grid.innerHTML = filteredItems.map(item => `
                 <div class="menu-item" onclick="handleItemClick(${item.id})">
                     <h4>${item.name}</h4>
-                    <p class="money">${item.price.toLocaleString()} đ</p>
+                    <p class="money">${Number(item.price || 0).toLocaleString()} đ</p>
                 </div>
             `).join('');
         }
 
         function handleItemClick(id) {
             const item = menu.find(m => m.id === id);
+            if(!item) return;
             tempItem = item;
             
             const container = document.getElementById('modal-options-container');
             container.innerHTML = ''; 
             document.getElementById('modal-item-name').innerText = item.name;
+
+            const itemCategoryNormalized = (item.category || '').toString().toUpperCase().trim();
 
             if (item.name.toUpperCase().includes('COMBO')) {
                 selectedOptionName = 'Chiên thường';
@@ -301,14 +336,14 @@
                 `;
                 document.getElementById('option-modal').style.display = 'flex';
 
-            } else if (['TRÀ', 'MATCHA', 'CACAO', 'TRÀ SỮA', 'SỮA TƯƠI'].includes(item.category)) {
+            } else if (['TRÀ', 'MATCHA', 'CACAO', 'TRÀ SỮA', 'SỮA TƯƠI'].includes(itemCategoryNormalized)) {
                 selectedOptionName = 'Thường';
                 selectedOptionPriceDelta = 0;
 
-                let toppingPrice = (item.category === 'TRÀ' || item.category === 'TRÀ SỮA') ? 5000 : 4000;
+                let toppingPrice = (itemCategoryNormalized === 'TRÀ' || itemCategoryNormalized === 'TRÀ SỮA') ? 5000 : 4000;
                 
                 let toppingHtml = '';
-                if (['MATCHA', 'CACAO'].includes(item.category)) {
+                if (['MATCHA', 'CACAO'].includes(itemCategoryNormalized)) {
                     toppingHtml = `
                         <button class="option-btn" id="opt-k2" onclick="changeActiveOption('Kem trứng', 5000, 'opt-k2')"><span>🥚 Thêm Kem Trứng</span> <span>+5.000đ</span></button>
                         <button class="option-btn" id="opt-k3" onclick="changeActiveOption('Kem muối', 5000, 'opt-k3')"><span>🧂 Thêm Kem Muối</span> <span>+5.000đ</span></button>
@@ -358,9 +393,9 @@
             if (!cart[uniqueKey]) {
                 cart[uniqueKey] = {
                     id: item.id,
-                    key: uniqueKey, // Lưu trữ hẳn UniqueKey để định vị chính xác khi tăng giảm số lượng
+                    key: uniqueKey,
                     name: item.name + suffix,
-                    price: item.price + priceDelta, 
+                    price: Number(item.price || 0) + priceDelta, 
                     quantity: 1
                 };
             } else {
@@ -397,7 +432,6 @@
             document.getElementById('cart-total-price').innerText = total.toLocaleString();
         }
 
-        // Đã sửa triệt để lỗi không nhận diện tham số e (event) trên trình duyệt
         function switchCategory(category, event) {
             currentCategory = category;
             const buttons = document.querySelectorAll('.tab-btn');
@@ -433,7 +467,7 @@
                     document.getElementById('table-number').value = '';
                     renderCart();
                 } else {
-                    alert("Lỗi kết nối database!");
+                    alert("Lỗi kết nối database khi gửi đơn!");
                 }
             } catch (error) {
                 alert("Mạng yếu, vui lòng kiểm tra lại!");
