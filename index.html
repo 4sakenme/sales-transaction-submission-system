@@ -6,6 +6,40 @@
     <title>📱 Phục vụ - Gọi món nhanh</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Giao diện thanh danh mục */
+        .category-tabs {
+            display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 15px;
+            scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        }
+        .category-tabs::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            background: #e0d7cf; border: none; padding: 10px 16px; border-radius: 20px;
+            font-weight: bold; color: #4e3629; cursor: pointer; white-space: nowrap; font-size: 14px;
+        }
+        .tab-btn.active { background: #e7a460; color: white; box-shadow: 0 2px 8px rgba(231, 164, 96, 0.4); }
+
+        /* 🎪 GIAO DIỆN POPUP CHỌN OPTION */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 340px;
+            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .modal-box h3 { margin-top: 0; color: #4e3629; }
+        .option-group { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+        .option-btn {
+            background: #f5f5f5; border: 2px solid #ddd; padding: 12px; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; display: flex; justify-content: space-between;
+        }
+        .option-btn.selected { border-color: #27ae60; background: #e8f8f0; color: #27ae60; }
+        .modal-actions { display: flex; gap: 10px; }
+        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .btn-cancel { background: #e0e0e0; color: #333; }
+        .btn-confirm { background: #27ae60; color: white; }
+    </style>
 </head>
 <body>
     <header>
@@ -19,6 +53,22 @@
         <section class="menu-section">
             <h2>Danh sách món</h2>
             <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
+            
+            <div class="category-tabs">
+                <button class="tab-btn active" onclick="switchCategory('ALL')">✨ Tất cả</button>
+                <button class="tab-btn" onclick="switchCategory('TRÀ')">🍵 Các loại Trà</button>
+                <button class="tab-btn" onclick="switchCategory('CÀ PHÊ')">☕ Cà phê</button>
+                <button class="tab-btn" onclick="switchCategory('TRÀ SỮA')">🧋 Trà sữa</button>
+                <button class="tab-btn" onclick="switchCategory('SỮA TƯƠI')">🥛 Sữa tươi</button>
+                <button class="tab-btn" onclick="switchCategory('SODA')">🍹 Soda</button>
+                <button class="tab-btn" onclick="switchCategory('NƯỚC ÉP')">🍹 Nước ép</button>
+                <button class="tab-btn" onclick="switchCategory('MATCHA')">🟢 Matcha</button>
+                <button class="tab-btn" onclick="switchCategory('SỮA CHUA')">🍧 Sữa chua</button>
+                <button class="tab-btn" onclick="switchCategory('CACAO')">🍫 Cacao</button>
+                <button class="tab-btn" onclick="switchCategory('ĐỒ NÓNG')">🔥 Đồ nóng</button>
+                <button class="tab-btn" onclick="switchCategory('ĂN VẶT')">🍟 Ăn vặt</button>
+            </div>
+
             <div id="menu-grid" class="menu-grid"></div>
         </section>
 
@@ -36,53 +86,161 @@
         </section>
     </main>
 
-    <script>
+    <div class="modal-overlay" id="option-modal">
+        <div class="modal-box">
+            <h3 id="modal-item-name">Tùy chọn món</h3>
+            <div class="option-group" id="modal-options-container">
+                </div>
+            <div class="modal-actions">
+                <button class="btn-modal btn-cancel" onclick="closeModal()">Hủy</button>
+                <button class="btn-modal btn-confirm" onclick="confirmAddToCart()">Thêm vào đơn</button>
+            </div>
+        </div>
+    </div>
 
+    <script>
+        // =========================================================
+        // ⚠️ ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO ĐÂY
+        // =========================================================
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+        const SUPABASE_KEY = "ANON_KEY_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidMSUPABASE_CỦA_BẠN";
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let menu = [];
         let cart = {};
+        let currentCategory = 'ALL';
+        
+        // Cấu hình các biến tạm phục vụ popup
+        let tempItem = null;
+        let selectedOptionName = '';
+        let selectedOptionPriceDelta = 0;
 
-        // Tải thực đơn từ Supabase
         async function loadMenu() {
             const { data, error } = await supabase.from('menu').select('*');
-            if (error) return alert("Không thể tải menu, kiểm tra lại cấu hình Supabase!");
+            if (error) return alert("Không thể tải menu!");
             menu = data;
-            renderMenu(menu);
+            renderMenu();
         }
 
-        function renderMenu(items) {
+        function renderMenu() {
             const grid = document.getElementById('menu-grid');
-            grid.innerHTML = items.map(item => `
-                <div class="menu-item" onclick="addToCart(${item.id})">
+            const searchText = document.getElementById('search-bar').value.toLowerCase();
+
+            const filteredItems = menu.filter(item => {
+                const matchCategory = (currentCategory === 'ALL' || item.category === currentCategory);
+                const matchSearch = item.name.toLowerCase().includes(searchText);
+                return matchCategory && matchSearch;
+            });
+
+            if (filteredItems.length === 0) {
+                grid.innerHTML = "<p style='grid-column: 1/-1; color: #888; text-align: center; margin-top:20px;'>Không tìm thấy món.</p>";
+                return;
+            }
+
+            grid.innerHTML = filteredItems.map(item => `
+                <div class="menu-item" onclick="handleItemClick(${item.id})">
                     <h4>${item.name}</h4>
                     <p class="money">${item.price.toLocaleString()} đ</p>
                 </div>
             `).join('');
         }
 
-        function filterMenu() {
-            const text = document.getElementById('search-bar').value.toLowerCase();
-            const filtered = menu.filter(m => m.name.toLowerCase().includes(text));
-            renderMenu(filtered);
+        // Kiểm tra món ăn để mở popup tương ứng
+        function handleItemClick(id) {
+            const item = menu.find(m => m.id === id);
+            tempItem = item;
+            
+            const container = document.getElementById('modal-options-container');
+            container.innerHTML = ''; // Clear options cũ
+            document.getElementById('modal-item-name').innerText = item.name;
+
+            // TRƯỜNG HỢP 1: NẾU LÀ CÁC MÓN COMBO ĂN VẶT
+            if (item.name.toUpperCase().includes('COMBO')) {
+                selectedOptionName = 'Chiên thường';
+                selectedOptionPriceDelta = 0;
+                
+                container.innerHTML = `
+                    <button class="option-btn selected" id="opt-1" onclick="changeActiveOption('Chiên thường', 0, 'opt-1')"><span>🍟 Chiên thường</span> <span>+0đ</span></button>
+                    <button class="option-btn" id="opt-2" onclick="changeActiveOption('Chiên mắm', 0, 'opt-2')"><span>🍯 Chiên mắm</span> <span>+0đ</span></button>
+                `;
+                document.getElementById('option-modal').style.display = 'flex';
+
+            // TRƯỜNG HỢP 2: CÁC MÓN CÓ THỂ THÊM KÈM KEM (TRÀ, MATCHA, CACAO, TRÀ SỮA, SỮA TƯƠI)
+            } else if (['TRÀ', 'MATCHA', 'CACAO', 'TRÀ SỮA', 'SỮA TƯƠI'].includes(item.category)) {
+                selectedOptionName = 'Thường';
+                selectedOptionPriceDelta = 0;
+
+                // Quy định mức giá cộng thêm: Trà/Sữa tươi cộng 4k hoặc 5k tùy theo menu của bạn
+                let toppingPrice = (item.category === 'TRÀ' || item.category === 'TRÀ SỮA') ? 5000 : 4000;
+                
+                // Riêng nhóm Matcha và Cacao trên menu có 2 loại kem: kem trứng và kem muối
+                let toppingHtml = '';
+                if (['MATCHA', 'CACAO'].includes(item.category)) {
+                    toppingHtml = `
+                        <button class="option-btn" id="opt-k2" onclick="changeActiveOption('Kem trứng', 5000, 'opt-k2')"><span>🥚 Thêm Kem Trứng</span> <span>+5.000đ</span></button>
+                        <button class="option-btn" id="opt-k3" onclick="changeActiveOption('Kem muối', 5000, 'opt-k3')"><span>🧂 Thêm Kem Muối</span> <span>+5.000đ</span></button>
+                    `;
+                } else {
+                    toppingHtml = `
+                        <button class="option-btn" id="opt-k2" onclick="changeActiveOption('Kem sữa', ${toppingPrice}, 'opt-k2')"><span>🥛 Thêm Kem Sữa</span> <span>+${toppingPrice.toLocaleString()}đ</span></button>
+                    `;
+                }
+
+                container.innerHTML = `
+                    <button class="option-btn selected" id="opt-k1" onclick="changeActiveOption('Thường', 0, 'opt-k1')"><span>🥤 Món bình thường</span> <span>+0đ</span></button>
+                    ${toppingHtml}
+                `;
+                document.getElementById('option-modal').style.display = 'flex';
+
+            // TRƯỜNG HỢP 3: CÁC MÓN KHÔNG CÓ OPTION (NƯỚC ÉP, SỮA CHUA, ĐỒ NÓNG, ĐỒ ĂN LẺ)
+            } else {
+                executeAddToCart(item, '', 0);
+            }
         }
 
-        function addToCart(id) {
-            const item = menu.find(m => m.id === id);
-            if (!cart[id]) {
-                cart[id] = { ...item, quantity: 1 };
+        // Đổi lựa chọn active trong popup
+        function changeActiveOption(name, priceDelta, btnId) {
+            selectedOptionName = name;
+            selectedOptionPriceDelta = priceDelta;
+            
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            document.getElementById(btnId).classList.add('selected');
+        }
+
+        function closeModal() {
+            document.getElementById('option-modal').style.display = 'none';
+            tempItem = null;
+        }
+
+        function confirmAddToCart() {
+            if (tempItem) {
+                let suffix = (selectedOptionName === 'Thường' || selectedOptionName === 'Chiên thường') ? '' : ` (${selectedOptionName})`;
+                executeAddToCart(tempItem, suffix, selectedOptionPriceDelta);
+            }
+            closeModal();
+        }
+
+        function executeAddToCart(item, suffix, priceDelta) {
+            const uniqueKey = item.id + suffix;
+            
+            if (!cart[uniqueKey]) {
+                cart[uniqueKey] = {
+                    id: item.id,
+                    name: item.name + suffix,
+                    price: item.price + priceDelta, // Tự động cộng thêm tiền kem vào tổng tiền món
+                    quantity: 1
+                };
             } else {
-                cart[id].quantity += 1;
+                cart[uniqueKey].quantity += 1;
             }
             renderCart();
         }
 
-        function changeQty(id, delta) {
-            if (!cart[id]) return;
-            cart[id].quantity += delta;
-            if (cart[id].quantity <= 0) delete cart[id];
+        function changeQty(uniqueKey, delta) {
+            if (!cart[uniqueKey]) return;
+            cart[uniqueKey].quantity += delta;
+            if (cart[uniqueKey].quantity <= 0) delete cart[uniqueKey];
             renderCart();
         }
 
@@ -91,13 +249,14 @@
             let total = 0;
             container.innerHTML = Object.values(cart).map(item => {
                 total += item.price * item.quantity;
+                const key = item.id + (item.name.includes('(') ? ` (${item.name.split('(')[1]}` : '');
                 return `
                     <div class="cart-row">
                         <div><strong>${item.name}</strong></div>
                         <div>
-                            <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
+                            <button class="btn-qty" onclick="changeQty('${key}', -1)">-</button>
                             <span> ${item.quantity} </span>
-                            <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
+                            <button class="btn-qty" onclick="changeQty('${key}', 1)">+</button>
                         </div>
                         <div class="money">${(item.price * item.quantity).toLocaleString()} đ</div>
                     </div>
@@ -106,6 +265,15 @@
             document.getElementById('cart-total-price').innerText = total.toLocaleString();
         }
 
+        function switchCategory(category) {
+            currentCategory = category;
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderMenu();
+        }
+
+        function filterMenu() { renderMenu(); }
 
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
@@ -113,9 +281,8 @@
             if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
 
             const btnSubmit = document.querySelector('.btn-submit');
-            const originalText = btnSubmit.innerText;
             btnSubmit.disabled = true;
-            btnSubmit.innerText = "⏳ Đang gửi đơn (Chờ mạng)...";
+            btnSubmit.innerText = "⏳ Đang gửi đơn...";
 
             const items = Object.values(cart).map(i => `${i.name} (x${i.quantity})`);
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
@@ -131,13 +298,13 @@
                     document.getElementById('table-number').value = '';
                     renderCart();
                 } else {
-                    alert("Lỗi bảo mật hoặc sai cấu hình, không thể gửi!");
+                    alert("Lỗi kết nối database!");
                 }
             } catch (error) {
-                alert("Mạng yếu không kết nối được! Hãy kiểm tra lại 4G/Wifi rồi bấm lại nhé.");
+                alert("Mạng yếu, vui lòng kiểm tra lại!");
             } finally {
                 btnSubmit.disabled = false;
-                btnSubmit.innerText = originalText;
+                btnSubmit.innerText = "🚀 Gửi đơn sang Bếp";
             }
         }
 
