@@ -41,21 +41,18 @@
         const getToday = () => new Date().toISOString().split('T')[0];
 
         async function loadData() {
-            // Lấy đơn chưa paid
             const { data: orders } = await supabase.from('orders').select('*').neq('status', 'paid');
             
-            // Render đơn bếp
             document.getElementById('orders-list').innerHTML = (orders || []).map(o => `
                 <div class="order-card">
                     <p><b>Bàn: ${o.table_number}</b></p>
                     <p>Món: ${Array.isArray(o.items) ? o.items.join(', ') : o.items}</p>
-                    <button class="btn btn-cook" onclick="updateStatus(${o.id}, '${o.status === 'pending' ? 'cooking' : 'done'}')">
+                    <button class="btn btn-cook" onclick="updateStatus('${o.id}', '${o.status === 'pending' ? 'cooking' : 'done'}')">
                         ${o.status === 'pending' ? '🍳 Bắt đầu làm' : '✅ Xong'}
                     </button>
                 </div>
             `).join('');
 
-            // Render bảng tính tiền (gom nhóm theo bàn)
             const debts = (orders || []).reduce((acc, o) => {
                 acc[o.table_number] = (acc[o.table_number] || 0) + o.total;
                 return acc;
@@ -68,7 +65,6 @@
                 </div>
             `).join('');
 
-            // Lấy doanh thu
             const { data: rev } = await supabase.from('revenue').select('total').eq('date', getToday()).maybeSingle();
             document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
         }
@@ -81,10 +77,8 @@
         async function payTable(table, amount) {
             if(!confirm("Xác nhận thu " + amount.toLocaleString() + "đ của bàn " + table + "?")) return;
             
-            // 1. Cập nhật trạng thái đơn
             await supabase.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
             
-            // 2. Cộng dồn doanh thu
             const { data: rev } = await supabase.from('revenue').select('total').eq('date', getToday()).maybeSingle();
             const newTotal = (rev?.total || 0) + amount;
             await supabase.from('revenue').upsert({ date: getToday(), total: newTotal }, { onConflict: 'date' });
