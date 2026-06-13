@@ -3,488 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📱 Phục vụ - Gọi món nhanh</title>
-    <link rel="stylesheet" href="style.css">
+    <title>👩‍🍳 Quản lý - Chủ quán / Bếp</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* 🎨 HỆ THỐNG CSS LAYOUT CHUYÊN NGHIỆP */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #fcf8f5;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-
-        header {
-            background: #4e3629;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
-        
-        .btn-back {
-            position: absolute;
-            left: 20px;
-            top: 13px;
-            background: #e7a460;
-            color: white;
-            text-decoration: none;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-        .btn-back:hover { background: #d68f4b; }
-
-        .waiter-container {
-            display: flex;
-            gap: 20px;
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-            box-sizing: border-box;
-        }
-
-        .menu-section {
-            flex: 1.6;
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            box-sizing: border-box;
-        }
-        .menu-section h2 { margin-top: 0; color: #4e3629; font-size: 20px; border-bottom: 2px solid #f5ece5; padding-bottom: 8px; }
-
-        .right-sidebar {
-            flex: 1.1;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .cart-section, .status-section {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            border: 2px solid #e7a460;
-            box-shadow: 0 4px 16px rgba(231, 164, 96, 0.1);
-            box-sizing: border-box;
-        }
-        .cart-section h2 { margin-top: 0; color: #e67e22; font-size: 19px; }
-        .status-section { border-color: #27ae60; }
-        .status-section h2 { margin-top: 0; color: #27ae60; font-size: 19px; border-bottom: 2px solid #e8f8f0; padding-bottom: 8px; }
-
-        #search-bar {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 15px;
-            box-sizing: border-box;
-            outline: none;
-        }
-        #search-bar:focus { border-color: #e7a460; }
-
-        .category-tabs {
-            display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px;
-        }
-        .category-tabs::-webkit-scrollbar { display: none; }
-        
-        .tab-btn {
-            background: #e0d7cf; border: none; padding: 10px 18px; border-radius: 20px;
-            font-weight: bold; color: #4e3629; cursor: pointer; white-space: nowrap; font-size: 13px;
-        }
-        .tab-btn.active { background: #e7a460; color: white; }
-
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-        }
-        .menu-item {
-            background: #fff8f2;
-            border: 1px solid #eddcd0;
-            padding: 14px;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 90px;
-        }
-        .menu-item:hover { transform: translateY(-3px); border-color: #e7a460; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .menu-item h4 { margin: 0 0 8px 0; color: #4e3629; font-size: 14px; }
-        .money { color: #e67e22; font-weight: bold; margin: 0; font-size: 14px; }
-
-        .table-input { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .table-input input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; }
-
-        .cart-row { padding: 10px 0; border-bottom: 1px dashed #eddcd0; }
-        .cart-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .cart-note-input {
-            width: 100%;
-            padding: 6px 10px;
-            border: 1px solid #e0d7cf;
-            border-radius: 6px;
-            font-size: 12px;
-            box-sizing: border-box;
-            background: #fffdfb;
-            outline: none;
-        }
-        .cart-note-input:focus { border-color: #e7a460; background: #fff; }
-
-        .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-submit { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
-
-        /* THEO DÕI ĐƠN */
-        .waiter-order-card {
-            background: #fffbf7;
-            border: 1px solid #eddcd0;
-            border-left: 5px solid #27ae60;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-        }
-        .waiter-order-card h4 { margin: 0 0 6px 0; color: #333; display: flex; justify-content: space-between; }
-        .waiter-order-card ul { margin: 5px 0; padding-left: 18px; font-size: 13px; color: #555; }
-        
-        .btn-pay-fast {
-            width: 100%;
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 8px;
-            font-size: 13px;
-        }
-        /* Style nhãn trạng thái món nhỏ gọn cho phục vụ xem */
-        .item-status-badge {
-            font-size: 11px;
-            padding: 1px 5px;
-            border-radius: 4px;
-            margin-left: 6px;
-            color: white;
-            font-weight: bold;
-            display: inline-block;
-        }
-
-        @media (max-width: 768px) {
-            .waiter-container { flex-direction: column; padding: 10px; }
-            .menu-section, .right-sidebar { width: 100%; }
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fcf8f5; margin: 0; padding: 0; color: #333; }
+        header { background: #4e3629; color: white; padding: 15px 20px; text-align: center; position: relative; }
+        .btn-back { position: absolute; left: 20px; top: 16px; background: #e7a460; color: white; text-decoration: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; }
+        .revenue-bar { background: #fff; border-bottom: 2px solid #eddcd0; padding: 15px; text-align: center; }
+        .money-large { color: #27ae60; font-size: 24px; font-weight: bold; }
+        .admin-main-layout { display: flex; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .bep-section { flex: 1.6; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .thungon-section { flex: 1; background: #fffdfb; padding: 20px; border-radius: 16px; border: 2px solid #e7a460; height: fit-content; }
+        .order-card { border-left: 6px solid #e67e22; margin-bottom: 15px; background: #fffbf7; padding: 15px; border-radius: 12px; border: 1px solid #eddcd0; }
+        .btn-status { border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; color: white; margin-top: 10px; transition: 0.3s; }
+        .table-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eddcd0; }
+        .btn-pay-table { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        @media (max-width: 768px) { .admin-main-layout { flex-direction: column; } }
+        .order-card ul { margin: 5px 0; padding-left: 20px; }
+        .order-card li { margin-bottom: 3px; }
     </style>
 </head>
 <body>
+
     <header>
         <a href="index.html" class="btn-back">⬅️ Cổng chào</a>
-        <h1>☕ COFFEE POS - GIAO DIỆN PHỤC VỤ</h1>
+        <h1>👩‍🍳 KHU VỰC CHỦ QUÁN</h1>
     </header>
 
-    <main class="waiter-container">
-        <section class="menu-section">
-            <h2>Danh sách món</h2>
-            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
-            
-            <div class="category-tabs">
-                <button class="tab-btn active" onclick="switchCategory('ALL', event)">✨ Tất cả</button>
-                <button class="tab-btn" onclick="switchCategory('TRÀ', event)">🍵 Trà</button>
-                <button class="tab-btn" onclick="switchCategory('CÀ PHÊ', event)">☕ Cà phê</button>
-                <button class="tab-btn" onclick="switchCategory('TRÀ SỮA', event)">🧋 Trà sữa</button>
-                <button class="tab-btn" onclick="switchCategory('SỮA TƯƠI', event)">🥛 Sữa tươi</button>
-                <button class="tab-btn" onclick="switchCategory('SODA', event)">🍹 Soda</button>
-                <button class="tab-btn" onclick="switchCategory('NƯỚC ÉP', event)">🍹 Nước ép</button>
-                <button class="tab-btn" onclick="switchCategory('MATCHA', event)">🟢 Matcha</button>
-                <button class="tab-btn" onclick="switchCategory('SỮA CHUA', event)">🍧 Sữa chua</button>
-                <button class="tab-btn" onclick="switchCategory('CACAO', event)">🍫 Cacao</button>
-                <button class="tab-btn" onclick="switchCategory('ĐỒ NÓNG', event)">🔥 Đồ nóng</button>
-                <button class="tab-btn" onclick="switchCategory('ĂN VẶT', event)">🍟 Ăn vặt</button>
-            </div>
+    <div class="revenue-bar">
+        <h3>💰 Doanh thu hôm nay <span id="display-date" style="color: #666; font-weight: normal;"></span>: <span id="today-revenue" class="money-large">0</span> đ</h3>
+    </div>
 
-            <div id="menu-grid" class="menu-grid"></div>
+    <main class="admin-main-layout">
+        <section class="bep-section">
+            <h2 style="color: #c0392b;">🔥 ĐƠN HÀNG CHỜ</h2>
+            <div id="orders-list"></div>
         </section>
-
-        <div class="right-sidebar">
-            <section class="cart-section">
-                <h2>🛒 Tạo Đơn Hàng Mới</h2>
-                <div class="table-input">
-                    <label>Số bàn: </label>
-                    <input type="text" id="table-number" placeholder="Ví dụ: 5" required>
-                </div>
-                <div id="cart-items"></div>
-                <div class="cart-total">
-                    <h3 style="margin: 10px 0 5px 0;">Tổng: <span id="cart-total-price" class="money">0</span> đ</h3>
-                    <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp</button>
-                </div>
-            </section>
-
-            <section class="status-section">
-                <h2>📋 Tình Trạng Đơn & Tính Tiền</h2>
-                <div id="waiter-orders-list">
-                    <p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào gọi món.</p>
-                </div>
-            </section>
-        </div>
+        <section class="thungon-section">
+            <h2 style="color: #27ae60; text-align: center;">📋 BẢNG TÍNH TIỀN</h2>
+            <div id="table-debts-list"></div>
+        </section>
     </main>
 
-    <script>
-        const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
-        
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            global: { headers: { 'x-passcode': 'beut123' } }
+<script>
+    const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+    
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        global: { headers: { 'x-passcode': 'beut123' } }
+    });
+
+    let menu = [];
+    let cart = {};
+    let currentCategory = 'ALL';
+
+    function getToday() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    async function loadInitialData() {
+        try {
+            const { data } = await supabaseClient.from('menu').select('*');
+            menu = data || [];
+            renderMenu();
+        } catch (e) { console.error(e); }
+
+        loadActiveOrders();
+    }
+
+    // Tải danh sách đơn hàng thực thời và gộp theo bàn
+    async function loadActiveOrders() {
+        // Thêm mốc thời gian để ép Supabase trả dữ liệu mới nhất không qua cache trình duyệt
+        const { data: orders, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .neq('status', 'paid')
+            .order('id', { ascending: true });
+
+        if (error) { console.error("Lỗi Realtime:", error); return; }
+
+        const listContainer = document.getElementById('waiter-orders-list');
+        if (!orders || orders.length === 0) {
+            listContainer.innerHTML = '<p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào cần xử lý.</p>';
+            return;
+        }
+
+        const tableGroups = {};
+        orders.forEach(o => {
+            if (!tableGroups[o.table_number]) {
+                tableGroups[o.table_number] = { total: 0, itemsWithStatus: [], hasUnfinished: false };
+            }
+            tableGroups[o.table_number].total += (o.total || 0);
+            
+            if (o.status !== 'done') {
+                tableGroups[o.table_number].hasUnfinished = true;
+            }
+
+            let badgeColor = '#e67e22'; 
+            let badgeText = 'Chờ làm';
+            if (o.status === 'cooking') { badgeColor = '#e7a460'; badgeText = 'Đang nấu'; }
+            if (o.status === 'done') { badgeColor = '#27ae60'; badgeText = 'Đã xong'; }
+
+            const statusBadge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
+
+            if (Array.isArray(o.items)) {
+                o.items.forEach(item => {
+                    tableGroups[o.table_number].itemsWithStatus.push(`<li>${item} ${statusBadge}</li>`);
+                });
+            } else if (o.items) {
+                tableGroups[o.table_number].itemsWithStatus.push(`<li>${o.items} ${statusBadge}</li>`);
+            }
         });
 
-        let menu = [];
-        let cart = {};
-        let currentCategory = 'ALL';
-
-        function getToday() {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
-
-        async function loadInitialData() {
-            try {
-                const { data } = await supabaseClient.from('menu').select('*');
-                menu = data || [];
-                renderMenu();
-            } catch (e) { console.error(e); }
-
-            loadActiveOrders();
-        }
-
-        // Tải danh sách đơn và hiển thị kèm nhãn trạng thái (Chờ làm / Đang nấu / Đã xong)
-        async function loadActiveOrders() {
-            const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid');
-            if (error) { console.error(error); return; }
-
-            const listContainer = document.getElementById('waiter-orders-list');
-            if (!orders || orders.length === 0) {
-                listContainer.innerHTML = '<p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào cần xử lý.</p>';
-                return;
-            }
-
-            // Gộp đơn theo số bàn
-            const tableGroups = {};
-            orders.forEach(o => {
-                if (!tableGroups[o.table_number]) {
-                    tableGroups[o.table_number] = { total: 0, itemsWithStatus: [], hasUnfinished: false };
-                }
-                tableGroups[o.table_number].total += (o.total || 0);
-                
-                // Kiểm tra xem đơn này bếp đã làm xong chưa
-                if (o.status !== 'done') {
-                    tableGroups[o.table_number].hasUnfinished = true;
-                }
-
-                // Thiết lập màu sắc nhãn trạng thái tương ứng
-                let badgeColor = '#e67e22'; // Màu cam - pending
-                let badgeText = 'Chờ làm';
-                if (o.status === 'cooking') { badgeColor = '#e7a460'; badgeText = 'Đang nấu'; }
-                if (o.status === 'done') { badgeColor = '#27ae60'; badgeText = 'Đã xong'; }
-
-                const statusBadge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
-
-                if (Array.isArray(o.items)) {
-                    o.items.forEach(item => {
-                        tableGroups[o.table_number].itemsWithStatus.push(`<li>${item} ${statusBadge}</li>`);
-                    });
-                } else if (o.items) {
-                    tableGroups[o.table_number].itemsWithStatus.push(`<li>${o.items} ${statusBadge}</li>`);
-                }
-            });
-
-            listContainer.innerHTML = Object.keys(tableGroups).map(table => {
-                const group = tableGroups[table];
-                return `
-                    <div class="waiter-order-card">
-                        <h4>
-                            <span>📍 Bàn: ${table}</span>
-                            <span class="money">${group.total.toLocaleString()}đ</span>
-                        </h4>
-                        <ul style="list-style-type: square; padding-left: 20px;">
-                            ${group.itemsWithStatus.join('')}
-                        </ul>
-                        <button class="btn-pay-fast" onclick="payTableFast('${table}', ${group.total}, ${group.hasUnfinished})">
-                            💵 Thu tiền tại bàn
-                        </button>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderMenu() {
-            const grid = document.getElementById('menu-grid');
-            const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
-
-            const filteredItems = menu.filter(item => {
-                const itemCat = (item.category || '').toString().toUpperCase().trim();
-                const targetCat = currentCategory.toUpperCase().trim();
-                
-                const matchCategory = (targetCat === 'ALL' || itemCat === targetCat);
-                const matchSearch = (item.name || '').toLowerCase().includes(searchText);
-                return matchCategory && matchSearch;
-            });
-
-            if (filteredItems.length === 0) {
-                grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #888;'>Không có món.</p>";
-                return;
-            }
-
-            grid.innerHTML = filteredItems.map(item => `
-                <div class="menu-item" onclick="addToCart(${item.id})">
-                    <h4>${item.name}</h4>
-                    <p class="money">${Number(item.price || 0).toLocaleString()} đ</p>
+        listContainer.innerHTML = Object.keys(tableGroups).map(table => {
+            const group = tableGroups[table];
+            return `
+                <div class="waiter-order-card">
+                    <h4>
+                        <span>📍 Bàn: ${table}</span>
+                        <span class="money">${group.total.toLocaleString()}đ</span>
+                    </h4>
+                    <ul style="list-style-type: square; padding-left: 20px;">
+                        ${group.itemsWithStatus.join('')}
+                    </ul>
+                    <button class="btn-pay-fast" onclick="payTableFast('${table}', ${group.total}, ${group.hasUnfinished})">
+                        💵 Thu tiền tại bàn
+                    </button>
                 </div>
-            `).join('');
-        }
+            `;
+        }).join('');
+    }
 
-        function addToCart(id) {
-            const item = menu.find(m => m.id === id);
-            if (!item) return;
+    function renderMenu() {
+        const grid = document.getElementById('menu-grid');
+        const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
 
-            if (!cart[id]) {
-                cart[id] = { id: id, name: item.name, price: Number(item.price || 0), quantity: 1, note: '' };
-            } else {
-                cart[id].quantity += 1;
-            }
-            renderCart();
-        }
-
-        function changeQty(id, delta) {
-            if (!cart[id]) return;
-            cart[id].quantity += delta;
-            if (cart[id].quantity <= 0) delete cart[id];
-            renderCart();
-        }
-
-        function updateNote(id, text) {
-            if (cart[id]) cart[id].note = text.trim();
-        }
-
-        function renderCart() {
-            const container = document.getElementById('cart-items');
-            let total = 0;
+        const filteredItems = menu.filter(item => {
+            const itemCat = (item.category || '').toString().toUpperCase().trim();
+            const targetCat = currentCategory.toUpperCase().trim();
             
-            container.innerHTML = Object.values(cart).map(item => {
-                total += item.price * item.quantity;
-                return `
-                    <div class="cart-row">
-                        <div class="cart-row-top">
-                            <div style="flex:1; font-size:13px;"><strong>${item.name}</strong></div>
-                            <div style="margin-right:10px;">
-                                <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
-                                <span style="display:inline-block; width:15px; text-align:center; font-size:13px;">${item.quantity}</span>
-                                <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
-                            </div>
-                            <div class="money" style="font-size:13px;">${(item.price * item.quantity).toLocaleString()} đ</div>
+            const matchCategory = (targetCat === 'ALL' || itemCat === targetCat);
+            const matchSearch = (item.name || '').toLowerCase().includes(searchText);
+            return matchCategory && matchSearch;
+        });
+
+        if (filteredItems.length === 0) {
+            grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #888;'>Không có món.</p>";
+            return;
+        }
+
+        grid.innerHTML = filteredItems.map(item => `
+            <div class="menu-item" onclick="addToCart(${item.id})">
+                <h4>${item.name}</h4>
+                <p class="money">${Number(item.price || 0).toLocaleString()} đ</p>
+            </div>
+        `).join('');
+    }
+
+    function addToCart(id) {
+        const item = menu.find(m => m.id === id);
+        if (!item) return;
+
+        if (!cart[id]) {
+            cart[id] = { id: id, name: item.name, price: Number(item.price || 0), quantity: 1, note: '' };
+        } else {
+            cart[id].quantity += 1;
+        }
+        renderCart();
+    }
+
+    function changeQty(id, delta) {
+        if (!cart[id]) return;
+        cart[id].quantity += delta;
+        if (cart[id].quantity <= 0) delete cart[id];
+        renderCart();
+    }
+
+    function updateNote(id, text) {
+        if (cart[id]) cart[id].note = text.trim();
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-items');
+        let total = 0;
+        
+        container.innerHTML = Object.values(cart).map(item => {
+            total += item.price * item.quantity;
+            return `
+                <div class="cart-row">
+                    <div class="cart-row-top">
+                        <div style="flex:1; font-size:13px;"><strong>${item.name}</strong></div>
+                        <div style="margin-right:10px;">
+                            <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
+                            <span style="display:inline-block; width:15px; text-align:center; font-size:13px;">${item.quantity}</span>
+                            <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
                         </div>
-                        <input type="text" class="cart-note-input" placeholder="💡 Ghi chú (ít đá, ngọt vừa...)" 
-                               value="${item.note || ''}" oninput="updateNote(${item.id}, this.value)">
+                        <div class="money" style="font-size:13px;">${(item.price * item.quantity).toLocaleString()} đ</div>
                     </div>
-                `;
-            }).join('');
-            document.getElementById('cart-total-price').innerText = total.toLocaleString();
-        }
+                    <input type="text" class="cart-note-input" placeholder="💡 Ghi chú (ít đá, ngọt vừa...)" 
+                           value="${item.note || ''}" oninput="updateNote(${item.id}, this.value)">
+                </div>
+            `;
+        }).join('');
+        document.getElementById('cart-total-price').innerText = total.toLocaleString();
+    }
 
-        function switchCategory(category, event) {
-            currentCategory = category;
-            const buttons = document.querySelectorAll('.tab-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            if(event && event.target) event.target.classList.add('active');
-            renderMenu();
-        }
+    function switchCategory(category, event) {
+        currentCategory = category;
+        const buttons = document.querySelectorAll('.tab-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        if(event && event.target) event.target.classList.add('active');
+        renderMenu();
+    }
 
-        function filterMenu() { renderMenu(); }
+    function filterMenu() { renderMenu(); }
 
-        async function submitOrder() {
-            const table = document.getElementById('table-number').value.trim();
-            if (!table) return alert("Vui lòng nhập số bàn!");
-            if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
+    async function submitOrder() {
+        const table = document.getElementById('table-number').value.trim();
+        if (!table) return alert("Vui lòng nhập số bàn!");
+        if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
 
-            const btnSubmit = document.querySelector('.btn-submit');
-            btnSubmit.disabled = true;
+        const btnSubmit = document.querySelector('.btn-submit');
+        btnSubmit.disabled = true;
 
-            const items = Object.values(cart).map(i => {
-                const noteText = i.note ? ` (${i.note})` : '';
-                return `${i.name}${noteText} (x${i.quantity})`;
-            });
-            
-            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
+        const items = Object.values(cart).map(i => {
+            const noteText = i.note ? ` (${i.note})` : '';
+            return `${i.name}${noteText} (x${i.quantity})`;
+        });
+        
+        const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
-            try {
-                const { error } = await supabaseClient.from('orders').insert([
-                    { table_number: table, items: items, total: total, status: 'pending' }
-                ]);
+        try {
+            const { error } = await supabaseClient.from('orders').insert([
+                { table_number: table, items: items, total: total, status: 'pending' }
+            ]);
 
-                if (!error) {
-                    alert("🚀 Đã gửi đơn xuống Bếp thành công!");
-                    cart = {};
-                    document.getElementById('table-number').value = '';
-                    renderCart();
-                    loadActiveOrders();
-                } else {
-                    alert("Lỗi database: " + error.message);
-                }
-            } catch (error) {
-                alert("Lỗi kết nối mạng!");
-            } finally {
-                btnSubmit.disabled = false;
-            }
-        }
-
-        // ========================================================
-        // 💵 HÀM THU TIỀN NHANH CÓ KIỂM TRA TRẠNG THÁI BẾP
-        // ========================================================
-        async function payTableFast(table, amount, hasUnfinished) {
-            // Nếu có đơn chưa nấu xong, hiện cảnh báo nhắc nhở phục vụ kiểm tra lại với bếp trước
-            if (hasUnfinished) {
-                if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG!\nBạn có chắc chắn muốn tính tiền sớm và xóa đơn của bàn này không?`)) {
-                    return; // Người dùng ấn Hủy -> Dừng lệnh xóa đơn
-                }
+            if (!error) {
+                alert("🚀 Đã gửi đơn xuống Bếp thành công!");
+                cart = {};
+                document.getElementById('table-number').value = '';
+                renderCart();
+                loadActiveOrders();
             } else {
-                // Nếu bếp đã làm xong hết (màu xanh lá), chỉ cần hỏi xác nhận thu tiền thông thường
-                if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ?`)) return;
+                alert("Lỗi database: " + error.message);
             }
+        } catch (error) {
+            alert("Lỗi kết nối mạng!");
+        } finally {
+            btnSubmit.disabled = false;
+        }
+    }
 
-            // Chuyển trạng thái đơn sang 'paid'
-            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
-            if (orderError) {
-                alert("Lỗi xử lý đơn hàng: " + orderError.message);
+    async function payTableFast(table, amount, hasUnfinished) {
+        if (hasUnfinished) {
+            if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG!\nBạn có chắc chắn muốn tính tiền sớm và xóa đơn của bàn này không?`)) {
                 return;
             }
-
-            // Cộng dồn vào doanh thu ngày
-            const todayDate = getToday();
-            const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
-            const newTotal = (rev?.total || 0) + amount;
-
-            const { error: revError } = await supabaseClient.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
-            if (revError) {
-                alert("Đơn hàng đã ẩn nhưng lỗi lưu doanh thu: " + revError.message);
-            } else {
-                alert("✅ Thanh toán hoàn tất! Tiền đã cộng vào doanh thu hôm nay.");
-            }
-
-            loadActiveOrders();
+        } else {
+            if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ?`)) return;
         }
 
-        // Realtime đồng bộ cập nhật danh sách
-        supabaseClient.channel('waiter-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders).subscribe();
+        const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
+        if (orderError) {
+            alert("Lỗi xử lý đơn hàng: " + orderError.message);
+            return;
+        }
 
-        window.onload = loadInitialData;
-    </script>
+        const todayDate = getToday();
+        const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
+        const newTotal = (rev?.total || 0) + amount;
+
+        const { error: revError } = await supabaseClient.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
+        if (revError) {
+            alert("Đơn hàng đã ẩn nhưng lỗi lưu doanh thu: " + revError.message);
+        } else {
+            alert("✅ Thanh toán hoàn tất! Tiền đã cộng vào doanh thu hôm nay.");
+        }
+
+        loadActiveOrders();
+    }
+
+    // ==========================================
+    // ⚡ SỬA CHÍNH XÁC KÊNH REALTIME ĐỒNG BỘ 
+    // ==========================================
+    supabaseClient
+        .channel('public:orders')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+            console.log("Có thay đổi dữ liệu đơn hàng:", payload);
+            loadActiveOrders(); // Gọi hàm load lại dữ liệu ngay lập tức
+        })
+        .subscribe();
+
+    window.onload = loadInitialData;
+</script>
 </body>
 </html>
