@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👩‍🍳 Quản lý - Chủ quán / Bếp</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <h1>👩‍🍳 KHU VỰC CHỦ QUÁN & CHẾ BIẾN</h1>
+        <nav>
+            <a href="admin.html" class="active">👩‍🍳 Chủ quán</a>
+        </nav>
+    </header>
+
+    <div class="revenue-bar">
+        <h3>💰 Doanh thu hôm nay (<span id="today-date">--/--/----</span>): <span id="today-revenue" class="money-large">0</span> đ</h3>
+    </div>
+
+    <main class="admin-container">
+        <section class="order-board">
+            <h2>⚡ Các đơn hàng đang chờ (Realtime hiển thị)</h2>
+            <div id="orders-list" class="orders-list"></div>
+        </section>
+    </main>
+
+    <script>
+
+        const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
+        const SUPABASE_KEY = "AeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+        const CHU_QUAN_PASSCODE = "beut123";
+
+        // Cấu hình truyền mã bảo mật RLS qua Header
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            global: {
+                headers: {
+                    'x-passcode': CHU_QUAN_PASSCODE,
+                },
+            },
+        });
+
+        async function loadInitialData() {
+            // 1. Tải danh sách đơn chưa thanh toán
+            const { data: orders } = await supabase.from('orders').select('*').not('status', 'eq', 'paid').order('id', { ascending: true });
+            renderOrders(orders || []);
+
+            // 2. Tải và tính toán doanh thu ngày hôm nay
+            const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
+            document.getElementById('today-date').innerText = today;
+            
+            const { data: revData } = await supabase.from('revenue').select('total').eq('date', today).maybeSingle();
+            document.getElementById('today-revenue').innerText = revData ? revData.total.toLocaleString() : "0";
+        }
+
+        function renderOrders(orders) {
+            const list = document.getElementById('orders-list');
+            if (orders.length === 0) {
+                list.innerHTML = "<p style='color: #666; font-size: 16px;'>Hiện tại không có đơn hàng nào cần làm.</p>";
+                return;
+            }
+
+            list.innerHTML = orders.map(order => {
+                const timeStr = new Date(order.id).toLocaleTimeString('vi-VN');
+                return `
+                    <div class="order-card ${order.status}">
+                        <h3>
+                            <span>📍 ${order.table_number}</span>
+                            <span style="font-size:14px; color:#666;">🕒 ${timeStr}</span>
+                        </h3>
+                        <ul class="item-list">
+                            ${order.items.map(item => `<li>✨ <strong>${item}</strong></li>`).join('')}
+                        </ul>
+                        <p style="font-size: 16px; margin: 10px 0;">Tổng cộng: <span class="money">${order.total.toLocaleString()} đ</span></p>
+                        <p style="font-size: 14px; color: #555;">Trạng thái: <span>${order.status === 'pending' ? '⏳ Đang chờ' : '👨‍🍳 Đang làm món'}</span></p>
+                        <div>
+                            ${order.status === 'pending' ? 
+                                `<button class="btn-status btn-cook" onclick="updateStatus(${order.id}, 'cooking')">🍳 Làm xong đồ</button>` : ''
+                            }
+                            <button class="btn-status btn-pay" onclick="updateStatus(${order.id}, 'paid', ${order.total})">💵 Thu tiền & Xác nhận</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+
+        async function updateStatus(orderId, status, totalAmount = 0) {
+            if (status === 'paid') {
+                const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
+                
+                // Lấy số tiền hiện tại của ngày hôm nay
+                const { data: currentRev } = await supabase.from('revenue').select('total').eq('date', today).maybeSingle();
+                const newTotal = (currentRev ? currentRev.total : 0) + totalAmount;
+                
+                // Cập nhật lại doanh thu ngày hôm nay
+                await supabase.from('revenue').upsert({ date: today, total: newTotal });
+                // Đổi trạng thái đơn sang 'paid' để ẩn khỏi màn hình
+                await supabase.from('orders').update({ status: 'paid' }).eq('id', orderId);
+            } else {
+                await supabase.from('orders').update({ status: status }).eq('id', orderId);
+            }
+            loadInitialData();
+        }
+
+        // 🔥 KÍCH HOẠT REALTIME: Lắng nghe mọi thay đổi trên bảng orders
+        supabase
+          .channel('orders-realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+              loadInitialData(); 
+          })
+          .subscribe();
+
+        window.onload = loadInitialData;
+    </script>
+</body>
+</html>

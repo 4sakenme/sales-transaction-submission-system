@@ -1,0 +1,64 @@
+:root {
+    --primary: #4e3629;
+    --secondary: #e7a460;
+    --bg: #f9f6f0;
+    --text: #2c1d11;
+}
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0; background-color: var(--bg); color: var(--text);
+}
+header {
+    background: var(--primary); color: white; padding: 15px; text-align: center;
+}
+header a { color: #ccc; text-decoration: none; margin: 0 10px; font-weight: bold; }
+header a.active { color: var(--secondary); }
+
+/* Giao diện chính grid layout */
+.waiter-container, .admin-container {
+    display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 15px;
+}
+
+#search-bar {
+    width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; 
+    border: 1px solid #ccc; font-size: 16px; box-sizing: border-box;
+}
+.menu-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;
+}
+.menu-item {
+    background: white; padding: 15px 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    text-align: center; cursor: pointer; border: 2px solid transparent; transition: 0.15s;
+}
+.menu-item:hover { border-color: var(--secondary); background: #fffdf9; }
+.menu-item h4 { margin: 5px 0; font-size: 16px; }
+
+/* Giỏ hàng */
+.cart-section, .order-board { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+.table-input { margin-bottom: 15px; font-size: 16px; }
+.table-input input { padding: 10px; font-size: 16px; width: 120px; border: 1px solid #ccc; border-radius: 6px; }
+.cart-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+.btn-qty { background: #e0e0e0; border: none; padding: 8px 14px; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 16px; }
+.btn-submit { width: 100%; background: #27ae60; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
+
+/* Giao diện chủ quán admin */
+.admin-container { grid-template-columns: 1fr; }
+.revenue-bar { background: #d4edda; color: #155724; padding: 15px; text-align: center; margin: 10px 15px; border-radius: 8px; }
+.money-large { font-size: 24px; font-weight: bold; color: #721c24; }
+.orders-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+.order-card { background: white; border-left: 6px solid #f39c12; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.order-card.cooking { border-left-color: #3498db; background: #f4f9fd; }
+.order-card h3 { margin-top: 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+.item-list { padding-left: 20px; margin: 10px 0; font-size: 16px; line-height: 1.5; list-style-type: none;}
+.btn-status { padding: 12px 15px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; margin-top: 10px; margin-right: 8px; font-size: 14px; }
+.btn-cook { background: #3498db; }
+.btn-pay { background: #27ae60; }
+.money { font-weight: bold; color: #e74c3c; }
+
+/* CSS tối ưu riêng cho điện thoại màn hình nhỏ */
+@media (max-width: 768px) {
+    .waiter-container { grid-template-columns: 1fr; }
+    .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .menu-item { padding: 20px 8px; }
+    .btn-qty { padding: 10px 16px; }
+}
