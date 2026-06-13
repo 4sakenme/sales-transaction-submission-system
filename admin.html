@@ -200,11 +200,11 @@
         let activeOrders = [];
 
         async function loadInitialData() {
-            // Lấy toàn bộ các đơn hàng chưa thanh toán hoàn tất (status khác 'paid')
+            // Lấy dữ liệu từ Supabase
             const { data: orders, error } = await supabaseClient
                 .from('orders')
                 .select('*')
-                .not('status', 'eq', 'paid')
+                .not('status', 'eq', 'paid') // Lọc bỏ đơn đã thanh toán
                 .order('id', { ascending: false });
                 
             if (error) {
@@ -213,11 +213,13 @@
             }
                 
             activeOrders = orders || [];
+            console.log("Số đơn lấy được từ DB:", activeOrders.length);
             
+            // Render giao diện
             renderBepOrders();   
             renderTableDebts();  
 
-            // Tải tổng doanh thu ngày hôm nay
+            // Tải tổng doanh thu ngày hôm nay (Đặt vào trong hàm này để dữ liệu luôn tươi mới)
             const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
             document.getElementById('today-date').innerText = today;
             
