@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Phục vụ - Gọi món nhanh</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <h1>☕ COFFEE POS - PHỤC VỤ</h1>
+        <nav>
+            <a href="index.html" class="active">📱 Phục vụ</a>
+        </nav>
+    </header>
+
+    <main class="waiter-container">
+        <section class="menu-section">
+            <h2>Danh sách món</h2>
+            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
+            <div id="menu-grid" class="menu-grid"></div>
+        </section>
+
+        <section class="cart-section">
+            <h2>🛒 Đơn bàn hiện tại</h2>
+            <div class="table-input">
+                <label>Số bàn: </label>
+                <input type="text" id="table-number" placeholder="Ví dụ: Bàn 5" required>
+            </div>
+            <div id="cart-items"></div>
+            <div class="cart-total">
+                <h3>Tổng cộng: <span id="cart-total-price" class="money">0</span> đ</h3>
+                <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+
+        const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let menu = [];
+        let cart = {};
+
+        // Tải thực đơn từ Supabase
+        async function loadMenu() {
+            const { data, error } = await supabase.from('menu').select('*');
+            if (error) return alert("Không thể tải menu, kiểm tra lại cấu hình Supabase!");
+            menu = data;
+            renderMenu(menu);
+        }
+
+        function renderMenu(items) {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = items.map(item => `
+                <div class="menu-item" onclick="addToCart(${item.id})">
+                    <h4>${item.name}</h4>
+                    <p class="money">${item.price.toLocaleString()} đ</p>
+                </div>
+            `).join('');
+        }
+
+        function filterMenu() {
+            const text = document.getElementById('search-bar').value.toLowerCase();
+            const filtered = menu.filter(m => m.name.toLowerCase().includes(text));
+            renderMenu(filtered);
+        }
+
+        function addToCart(id) {
+            const item = menu.find(m => m.id === id);
+            if (!cart[id]) {
+                cart[id] = { ...item, quantity: 1 };
+            } else {
+                cart[id].quantity += 1;
+            }
+            renderCart();
+        }
+
+        function changeQty(id, delta) {
+            if (!cart[id]) return;
+            cart[id].quantity += delta;
+            if (cart[id].quantity <= 0) delete cart[id];
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            let total = 0;
+            container.innerHTML = Object.values(cart).map(item => {
+                total += item.price * item.quantity;
+                return `
+                    <div class="cart-row">
+                        <div><strong>${item.name}</strong></div>
+                        <div>
+                            <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
+                            <span> ${item.quantity} </span>
+                            <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
+                        </div>
+                        <div class="money">${(item.price * item.quantity).toLocaleString()} đ</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('cart-total-price').innerText = total.toLocaleString();
+        }
+
+
+        async function submitOrder() {
+            const table = document.getElementById('table-number').value.trim();
+            if (!table) return alert("Vui lòng nhập số bàn!");
+            if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
+
+            const btnSubmit = document.querySelector('.btn-submit');
+            const originalText = btnSubmit.innerText;
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "⏳ Đang gửi đơn (Chờ mạng)...";
+
+            const items = Object.values(cart).map(i => `${i.name} (x${i.quantity})`);
+            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+            try {
+                const { error } = await supabase.from('orders').insert([
+                    { id: Date.now(), table_number: table, items: items, total: total, status: 'pending' }
+                ]);
+
+                if (!error) {
+                    alert("🚀 Gửi đơn thành công! Bếp đã nhận được.");
+                    cart = {};
+                    document.getElementById('table-number').value = '';
+                    renderCart();
+                } else {
+                    alert("Lỗi bảo mật hoặc sai cấu hình, không thể gửi!");
+                }
+            } catch (error) {
+                alert("Mạng yếu không kết nối được! Hãy kiểm tra lại 4G/Wifi rồi bấm lại nhé.");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = originalText;
+            }
+        }
+
+        window.onload = loadMenu;
+    </script>
+</body>
+</html>
