@@ -45,13 +45,13 @@
             display: flex;
             gap: 20px;
             padding: 20px;
-            max-width: 1300px;
+            max-width: 1400px;
             margin: 0 auto;
             box-sizing: border-box;
         }
 
         .menu-section {
-            flex: 1.7;
+            flex: 1.6;
             background: white;
             padding: 20px;
             border-radius: 16px;
@@ -60,19 +60,24 @@
         }
         .menu-section h2 { margin-top: 0; color: #4e3629; font-size: 20px; border-bottom: 2px solid #f5ece5; padding-bottom: 8px; }
 
-        .cart-section {
-            flex: 1;
+        .right-sidebar {
+            flex: 1.1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .cart-section, .status-section {
             background: white;
             padding: 20px;
             border-radius: 16px;
             border: 2px solid #e7a460;
-            height: fit-content;
-            position: sticky;
-            top: 20px;
             box-shadow: 0 4px 16px rgba(231, 164, 96, 0.1);
             box-sizing: border-box;
         }
-        .cart-section h2 { margin-top: 0; color: #e67e22; font-size: 20px; }
+        .cart-section h2 { margin-top: 0; color: #e67e22; font-size: 19px; }
+        .status-section { border-color: #27ae60; }
+        .status-section h2 { margin-top: 0; color: #27ae60; font-size: 19px; border-bottom: 2px solid #e8f8f0; padding-bottom: 8px; }
 
         #search-bar {
             width: 100%;
@@ -99,13 +104,13 @@
 
         .menu-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
         }
         .menu-item {
             background: #fff8f2;
             border: 1px solid #eddcd0;
-            padding: 16px;
+            padding: 14px;
             border-radius: 12px;
             text-align: center;
             cursor: pointer;
@@ -113,17 +118,16 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 95px;
+            min-height: 90px;
         }
         .menu-item:hover { transform: translateY(-3px); border-color: #e7a460; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .menu-item h4 { margin: 0 0 8px 0; color: #4e3629; font-size: 15px; }
-        .money { color: #e67e22; font-weight: bold; margin: 0; font-size: 15px; }
+        .menu-item h4 { margin: 0 0 8px 0; color: #4e3629; font-size: 14px; }
+        .money { color: #e67e22; font-weight: bold; margin: 0; font-size: 14px; }
 
-        .table-input { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .table-input { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
         .table-input input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; }
 
-        /* Giao diện danh sách giỏ hàng & ô Nhập ghi chú mới */
-        .cart-row { padding: 12px 0; border-bottom: 1px dashed #eddcd0; }
+        .cart-row { padding: 10px 0; border-bottom: 1px dashed #eddcd0; }
         .cart-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .cart-note-input {
             width: 100%;
@@ -134,17 +138,47 @@
             box-sizing: border-box;
             background: #fffdfb;
             outline: none;
-            color: #666;
         }
         .cart-note-input:focus { border-color: #e7a460; background: #fff; }
 
         .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-submit { width: 100%; background: #27ae60; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; }
+        .btn-submit { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* CSS ĐƠN GIẢN CHO DANH SÁCH THEO DÕI ĐƠN CỦA PHỤC VỤ */
+        .waiter-order-card {
+            background: #fffbf7;
+            border: 1px solid #eddcd0;
+            border-left: 5px solid #27ae60;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+        .waiter-order-card h4 { margin: 0 0 6px 0; color: #333; display: flex; justify-content: space-between; }
+        .waiter-order-card ul { margin: 5px 0; padding-left: 18px; font-size: 13px; color: #555; }
+        .btn-pay-fast {
+            width: 100%;
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        .status-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+        }
 
         @media (max-width: 768px) {
             .waiter-container { flex-direction: column; padding: 10px; }
-            .menu-section, .cart-section { width: 100%; }
+            .menu-section, .right-sidebar { width: 100%; }
         }
     </style>
 </head>
@@ -177,50 +211,103 @@
             <div id="menu-grid" class="menu-grid"></div>
         </section>
 
-        <section class="cart-section">
-            <h2>🛒 Đơn bàn hiện tại</h2>
-            <div class="table-input">
-                <label>Số bàn: </label>
-                <input type="text" id="table-number" placeholder="Ví dụ: Bàn 5" required>
-            </div>
-            <div id="cart-items"></div>
-            <div class="cart-total">
-                <h3><span>Tổng cộng:</span> <span id="cart-total-price" class="money">0</span> đ</h3>
-                <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp</button>
-            </div>
-        </section>
+        <div class="right-sidebar">
+            <section class="cart-section">
+                <h2>🛒 Tạo Đơn Hàng Mới</h2>
+                <div class="table-input">
+                    <label>Số bàn: </label>
+                    <input type="text" id="table-number" placeholder="Ví dụ: 5" required>
+                </div>
+                <div id="cart-items"></div>
+                <div class="cart-total">
+                    <h3 style="margin: 10px 0 5px 0;">Tổng: <span id="cart-total-price" class="money">0</span> đ</h3>
+                    <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp</button>
+                </div>
+            </section>
+
+            <section class="status-section">
+                <h2>📋 Tình Trạng Đơn & Tính Tiền</h2>
+                <div id="waiter-orders-list">
+                    <p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào gọi món.</p>
+                </div>
+            </section>
+        </div>
     </main>
 
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Kèm passcode để vượt qua phân quyền RLS ở cả bảng orders và revenue
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            global: { headers: { 'x-passcode': 'beut123' } }
+        });
 
         let menu = [];
         let cart = {};
         let currentCategory = 'ALL';
 
-        async function loadMenu() {
-            const grid = document.getElementById('menu-grid');
-            grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #e67e22;'>⏳ Đang tải dữ liệu từ Supabase...</p>";
-            
+        // Hàm lấy ngày YYYY-MM-DD
+        function getToday() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        async function loadInitialData() {
+            // Tải thực đơn
             try {
-                const { data, error } = await supabaseClient.from('menu').select('*');
-                
-                if (error) {
-                    grid.innerHTML = `
-                        <div style='grid-column: 1/-1; padding: 15px; background: #fdf2f2; color: #9b1c1c; border-radius: 8px;'>
-                            <strong>❌ Lỗi bảo mật hoặc cấu hình Supabase:</strong> ${error.message}<br>
-                        </div>`;
-                    return;
-                }
-                
+                const { data } = await supabaseClient.from('menu').select('*');
                 menu = data || [];
                 renderMenu();
-            } catch (err) {
-                grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: red;'>❌ Lỗi: " + err.message + "</p>";
+            } catch (e) { console.error(e); }
+
+            // Tải danh sách đơn chưa thanh toán cho phục vụ xem và thu tiền
+            loadActiveOrders();
+        }
+
+        // Lấy các đơn hàng chưa thanh toán để phục vụ theo dõi tình trạng thực tế
+        async function loadActiveOrders() {
+            const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid');
+            if (error) { console.error(error); return; }
+
+            const listContainer = document.getElementById('waiter-orders-list');
+            if (!orders || orders.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào cần xử lý.</p>';
+                return;
             }
+
+            // Gộp đơn theo số bàn để phục vụ dễ nhìn tổng số tiền khách cần trả tại bàn đó
+            const tableGroups = {};
+            orders.forEach(o => {
+                if (!tableGroups[o.table_number]) {
+                    tableGroups[o.table_number] = { total: 0, items: [], ids: [] };
+                }
+                tableGroups[o.table_number].total += (o.total || 0);
+                tableGroups[o.table_number].ids.push(o.id);
+                
+                // Gom danh sách món
+                if (Array.isArray(o.items)) {
+                    tableGroups[o.table_number].items.push(...o.items);
+                } else if (o.items) {
+                    tableGroups[o.table_number].items.push(o.items);
+                }
+            });
+
+            listContainer.innerHTML = Object.keys(tableGroups).map(table => {
+                const group = tableGroups[table];
+                return `
+                    <div class="waiter-order-card">
+                        <h4>
+                            <span>📍 Bàn: ${table}</span>
+                            <span class="money">${group.total.toLocaleString()}đ</span>
+                        </h4>
+                        <ul>
+                            ${group.items.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                        <button class="btn-pay-fast" onclick="payTableFast('${table}', ${group.total})">💵 Thu tiền tại bàn</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderMenu() {
@@ -237,7 +324,7 @@
             });
 
             if (filteredItems.length === 0) {
-                grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #888;'>Không có món nào trong danh mục này.</p>";
+                grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #888;'>Không có món.</p>";
                 return;
             }
 
@@ -249,20 +336,12 @@
             `).join('');
         }
 
-        // Bỏ hoàn toàn Popup Topping cũ, click là ăn trực tiếp vào giỏ hàng luôn
         function addToCart(id) {
             const item = menu.find(m => m.id === id);
             if (!item) return;
 
-            // Sử dụng id làm key duy nhất trong giỏ hàng
             if (!cart[id]) {
-                cart[id] = {
-                    id: id,
-                    name: item.name,
-                    price: Number(item.price || 0),
-                    quantity: 1,
-                    note: '' // Tạo sẵn thuộc tính ghi chú trống
-                };
+                cart[id] = { id: id, name: item.name, price: Number(item.price || 0), quantity: 1, note: '' };
             } else {
                 cart[id].quantity += 1;
             }
@@ -276,11 +355,8 @@
             renderCart();
         }
 
-        // Đồng bộ chữ nhập từ ô Note vào biến lưu trữ giỏ hàng
         function updateNote(id, text) {
-            if (cart[id]) {
-                cart[id].note = text.trim();
-            }
+            if (cart[id]) cart[id].note = text.trim();
         }
 
         function renderCart() {
@@ -292,15 +368,15 @@
                 return `
                     <div class="cart-row">
                         <div class="cart-row-top">
-                            <div style="flex:1;"><strong>${item.name}</strong></div>
-                            <div style="margin-right:15px;">
+                            <div style="flex:1; font-size:13px;"><strong>${item.name}</strong></div>
+                            <div style="margin-right:10px;">
                                 <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
-                                <span style="display:inline-block; width:20px; text-align:center;">${item.quantity}</span>
+                                <span style="display:inline-block; width:15px; text-align:center; font-size:13px;">${item.quantity}</span>
                                 <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
                             </div>
-                            <div class="money">${(item.price * item.quantity).toLocaleString()} đ</div>
+                            <div class="money" style="font-size:13px;">${(item.price * item.quantity).toLocaleString()} đ</div>
                         </div>
-                        <input type="text" class="cart-note-input" placeholder="💡 Thêm ghi chú (ít đá, không đường, vị...)" 
+                        <input type="text" class="cart-note-input" placeholder="💡 Ghi chú (ít đá, ngọt vừa...)" 
                                value="${item.note || ''}" oninput="updateNote(${item.id}, this.value)">
                     </div>
                 `;
@@ -318,7 +394,7 @@
 
         function filterMenu() { renderMenu(); }
 
-        // Gửi đơn hàng sang bếp kèm theo ghi chú đầy đủ
+        // Gửi đơn lên bếp
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
@@ -327,7 +403,6 @@
             const btnSubmit = document.querySelector('.btn-submit');
             btnSubmit.disabled = true;
 
-            // Định dạng chuỗi món ăn: Món + Ghi chú (nếu có) + Số lượng
             const items = Object.values(cart).map(i => {
                 const noteText = i.note ? ` (${i.note})` : '';
                 return `${i.name}${noteText} (x${i.quantity})`;
@@ -341,21 +416,53 @@
                 ]);
 
                 if (!error) {
-                    alert("🚀 Gửi đơn sang Bếp thành công!");
+                    alert("🚀 Đã gửi đơn xuống Bếp thành công!");
                     cart = {};
                     document.getElementById('table-number').value = '';
                     renderCart();
+                    loadActiveOrders(); // Cập nhật lại mục theo dõi đơn liền
                 } else {
                     alert("Lỗi database: " + error.message);
                 }
             } catch (error) {
-                alert("Lỗi mạng, vui lòng kiểm tra kết nối!");
+                alert("Lỗi kết nối mạng!");
             } finally {
                 btnSubmit.disabled = false;
             }
         }
 
-        window.onload = loadMenu;
+        // ========================================================
+        // 💵 HÀM THU TIỀN NHANH TẠI BÀN DÀNH CHO PHỤC VỤ
+        // ========================================================
+        async function payTableFast(table, amount) {
+            if(!confirm("Thu tiền bàn " + table + " số tiền " + amount.toLocaleString() + "đ? Đơn sẽ thanh toán và cộng vào doanh thu ngày.")) return;
+
+            // 1. Chuyển trạng thái đơn của bàn này thành đã thanh toán (paid) để mất đơn khỏi hàng chờ
+            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
+            if (orderError) {
+                alert("Lỗi xử lý đơn hàng: " + orderError.message);
+                return;
+            }
+
+            // 2. Lấy doanh thu ngày hiện tại, cộng dồn tiền thu được rồi đồng bộ lên bảng revenue
+            const todayDate = getToday();
+            const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
+            const newTotal = (rev?.total || 0) + amount;
+
+            const { error: revError } = await supabaseClient.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
+            if (revError) {
+                alert("Đơn hàng đã ẩn nhưng lỗi lưu doanh thu: " + revError.message);
+            } else {
+                alert("✅ Thanh toán hoàn tất! Tiền đã cộng vào doanh thu hôm nay.");
+            }
+
+            loadActiveOrders(); // Làm mới danh sách bàn sau khi thu tiền
+        }
+
+        // Đăng ký nhận sự kiện realtime từ Supabase để tự động tải lại trạng thái đơn khi Bếp nấu xong
+        supabaseClient.channel('waiter-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders).subscribe();
+
+        window.onload = loadInitialData;
     </script>
 </body>
 </html>
