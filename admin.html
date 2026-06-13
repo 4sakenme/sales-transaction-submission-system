@@ -19,8 +19,6 @@
         .table-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eddcd0; }
         .btn-pay-table { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         @media (max-width: 768px) { .admin-main-layout { flex-direction: column; } }
-        
-        /* CSS bổ sung để hiển thị danh sách món đẹp như cũ */
         .order-card ul { margin: 5px 0; padding-left: 20px; }
         .order-card li { margin-bottom: 3px; }
     </style>
@@ -33,7 +31,7 @@
     </header>
 
     <div class="revenue-bar">
-        <h3>💰 Doanh thu hôm nay: <span id="today-revenue" class="money-large">0</span> đ</h3>
+        <h3>💰 Doanh thu hôm nay <span id="display-date" style="color: #666; font-weight: normal;"></span>: <span id="today-revenue" class="money-large">0</span> đ</h3>
     </div>
 
     <main class="admin-main-layout">
@@ -55,17 +53,26 @@
     }
     const client = window.supabaseClient;
 
-    // Tự động sinh ngày dạng YYYY-MM-DD theo giờ địa phương Việt Nam
+    // Định dạng ngày lưu DB (YYYY-MM-DD)
     function getToday() {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
+    // Định dạng ngày hiển thị ra màn hình (DD/MM/YYYY)
+    function getDisplayDate() {
+        const d = new Date();
+        return `(${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()})`;
+    }
+
     async function loadData() {
+        // Cập nhật ngày hiển thị trên giao diện
+        document.getElementById('display-date').innerText = getDisplayDate();
+
         const { data: orders, error } = await client.from('orders').select('*').neq('status', 'paid');
         if (error) { console.error("Lỗi tải đơn:", error); return; }
 
-        // 1. Render danh sách đơn ở Bếp (Giữ nguyên giao diện dạng thẻ tròn đẹp của bạn)
+        // Render danh sách đơn ở Bếp
         document.getElementById('orders-list').innerHTML = (orders || []).map(o => {
             let itemsHTML = '';
             if (Array.isArray(o.items)) {
@@ -81,13 +88,13 @@
                     <p>Trạng thái: <strong>${o.status}</strong></p>
                     <button class="btn-status" style="background:${o.status === 'pending' ? '#e67e22' : '#3498db'}" 
                         onclick="updateStatus('${o.id}', '${o.status === 'pending' ? 'cooking' : 'done'}')">
-                        ${o.status === 'pending' ? '🔍 Bắt đầu làm' : '✅ Xong'}
+                        ${o.status === 'pending' ? '🍳 Bắt đầu làm' : '✅ Xong'}
                     </button>
                 </div>
             `;
         }).join('');
 
-        // 2. Render bảng tính tiền (Gom nhóm và giữ nguyên nút Thu Tiền màu xanh lá đẹp)
+        // Render bảng tính tiền
         const debts = (orders || []).reduce((acc, o) => {
             acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
             return acc;
@@ -100,12 +107,12 @@
             </div>
         `).join('');
 
-        // 3. Hiển thị tổng doanh thu ngày hôm nay lên thanh bar
+        // Lấy dữ liệu doanh thu
         const { data: rev } = await client.from('revenue').select('total').eq('date', getToday()).maybeSingle();
         document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
     }
 
-    // Sửa lỗi nút Bắt đầu làm không chạy bằng cách ép kiểu id và kiểm tra phản hồi
+    // Cập nhật trạng thái
     async function updateStatus(id, status) {
         const { error } = await client.from('orders').update({ status }).eq('id', parseInt(id));
         if (error) {
@@ -115,25 +122,23 @@
         }
     }
 
-    // Sửa lỗi Thu tiền: vừa mất đơn vừa lưu chính xác vào doanh thu ngày
+    // Xử lý nút thu tiền và chuyển trạng thái đơn sang 'paid'
     async function payTable(table, amount) {
-        if(!confirm("Thu tiền bàn " + table + "? Đơn sẽ được lưu và hoàn thành.")) return;
+        if(!confirm("Thu tiền bàn " + table + "? Đơn sẽ được chuyển sang trạng thái Đã Thanh Toán.")) return;
         
-        // Bước A: Chuyển toàn bộ đơn chưa thanh toán của bàn này thành 'paid' để làm trống danh sách chờ
         const { error: orderError } = await client.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
         if (orderError) {
-            alert("Lỗi xử lý đơn hàng: " + orderError.message);
+            alert("Lỗi ẩn đơn hàng: " + orderError.message);
             return;
         }
         
-        // Bước B: Lấy tổng tiền đã tích lũy trong ngày hôm nay, cộng dồn rồi upsert lại
         const todayDate = getToday();
         const { data: rev } = await client.from('revenue').select('total').eq('date', todayDate).maybeSingle();
         const newTotal = (rev?.total || 0) + amount;
         
         const { error: revError } = await client.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
         if (revError) {
-            alert("Đơn đã ẩn nhưng lỗi cộng dồn doanh thu: " + revError.message);
+            alert("Đơn đã ẩn thành công nhưng lỗi lưu doanh thu: " + revError.message);
         }
         
         loadData();
