@@ -89,8 +89,7 @@
     <div class="modal-overlay" id="option-modal">
         <div class="modal-box">
             <h3 id="modal-item-name">Tùy chọn món</h3>
-            <div class="option-group" id="modal-options-container">
-                </div>
+            <div class="option-group" id="modal-options-container"></div>
             <div class="modal-actions">
                 <button class="btn-modal btn-cancel" onclick="closeModal()">Hủy</button>
                 <button class="btn-modal btn-confirm" onclick="confirmAddToCart()">Thêm vào đơn</button>
@@ -100,23 +99,24 @@
 
     <script>
         // =========================================================
-        // ⚠️ ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO ĐÂY
+        // 🔑 KẾT NỐI SUPABASE CHUẨN XÁC (Đã sửa lỗi khai báo trùng lặp biến)
         // =========================================================
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "ANON_KEY_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidMSUPABASE_CỦA_BẠN";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+        
+        // Đổi tên thành supabaseClient chống crash app
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let menu = [];
         let cart = {};
         let currentCategory = 'ALL';
         
-        // Cấu hình các biến tạm phục vụ popup
         let tempItem = null;
         let selectedOptionName = '';
         let selectedOptionPriceDelta = 0;
 
         async function loadMenu() {
-            const { data, error } = await supabase.from('menu').select('*');
+            const { data, error } = await supabaseClient.from('menu').select('*');
             if (error) return alert("Không thể tải menu!");
             menu = data;
             renderMenu();
@@ -145,16 +145,14 @@
             `).join('');
         }
 
-        // Kiểm tra món ăn để mở popup tương ứng
         function handleItemClick(id) {
             const item = menu.find(m => m.id === id);
             tempItem = item;
             
             const container = document.getElementById('modal-options-container');
-            container.innerHTML = ''; // Clear options cũ
+            container.innerHTML = ''; 
             document.getElementById('modal-item-name').innerText = item.name;
 
-            // TRƯỜNG HỢP 1: NẾU LÀ CÁC MÓN COMBO ĂN VẶT
             if (item.name.toUpperCase().includes('COMBO')) {
                 selectedOptionName = 'Chiên thường';
                 selectedOptionPriceDelta = 0;
@@ -165,15 +163,12 @@
                 `;
                 document.getElementById('option-modal').style.display = 'flex';
 
-            // TRƯỜNG HỢP 2: CÁC MÓN CÓ THỂ THÊM KÈM KEM (TRÀ, MATCHA, CACAO, TRÀ SỮA, SỮA TƯƠI)
             } else if (['TRÀ', 'MATCHA', 'CACAO', 'TRÀ SỮA', 'SỮA TƯƠI'].includes(item.category)) {
                 selectedOptionName = 'Thường';
                 selectedOptionPriceDelta = 0;
 
-                // Quy định mức giá cộng thêm: Trà/Sữa tươi cộng 4k hoặc 5k tùy theo menu của bạn
                 let toppingPrice = (item.category === 'TRÀ' || item.category === 'TRÀ SỮA') ? 5000 : 4000;
                 
-                // Riêng nhóm Matcha và Cacao trên menu có 2 loại kem: kem trứng và kem muối
                 let toppingHtml = '';
                 if (['MATCHA', 'CACAO'].includes(item.category)) {
                     toppingHtml = `
@@ -192,13 +187,11 @@
                 `;
                 document.getElementById('option-modal').style.display = 'flex';
 
-            // TRƯỜNG HỢP 3: CÁC MÓN KHÔNG CÓ OPTION (NƯỚC ÉP, SỮA CHUA, ĐỒ NÓNG, ĐỒ ĂN LẺ)
             } else {
                 executeAddToCart(item, '', 0);
             }
         }
 
-        // Đổi lựa chọn active trong popup
         function changeActiveOption(name, priceDelta, btnId) {
             selectedOptionName = name;
             selectedOptionPriceDelta = priceDelta;
@@ -228,7 +221,7 @@
                 cart[uniqueKey] = {
                     id: item.id,
                     name: item.name + suffix,
-                    price: item.price + priceDelta, // Tự động cộng thêm tiền kem vào tổng tiền món
+                    price: item.price + priceDelta, 
                     quantity: 1
                 };
             } else {
@@ -247,6 +240,8 @@
         function renderCart() {
             const container = document.getElementById('cart-items');
             let total = 0;
+            
+            // Xử lý logic bóc tách key động mượt mà để nút tăng giảm số lượng hoạt động chính xác
             container.innerHTML = Object.values(cart).map(item => {
                 total += item.price * item.quantity;
                 const key = item.id + (item.name.includes('(') ? ` (${item.name.split('(')[1]}` : '');
@@ -288,7 +283,7 @@
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
             try {
-                const { error } = await supabase.from('orders').insert([
+                const { error } = await supabaseClient.from('orders').insert([
                     { id: Date.now(), table_number: table, items: items, total: total, status: 'pending' }
                 ]);
 

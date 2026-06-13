@@ -32,8 +32,13 @@
         .order-card {
             border-left: 6px solid #e67e22; /* Cam - Đang chờ làm */
             margin-bottom: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .order-card.cooking { border-left-color: #3498db; } /* Xanh - Đang làm */
+        .order-card.cooking { border-left-color: #3498db; } /* Xanh dương - Đang làm */
+        .order-card.done_cooking { border-left-color: #2ecc71; } /* Xanh lá - Đã làm xong món */
         
         /* CSS cho danh sách tổng hợp nợ theo bàn */
         .table-debt-row {
@@ -96,48 +101,58 @@
 
     <script>
         // =========================================================
-        // ⚠️ ĐIỀN THÔNG TIN SUPABASE VÀ MÃ BÍ MẬT TẠI ĐÂY
+        // 🔑 CẤU HÌNH SUPABASE (Đã đổi tên biến thành supabaseClient)
         // =========================================================
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "ANON_KEY_SUPABASE_CỦA_BẠNeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+        const SUPABASE_KEY = "sb_publishable_z-cNICZB5TO16x8...mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM"; // Chuỗi khóa bảo mật của bạn
         const CHU_QUAN_PASSCODE = "beut123"; 
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        // Khởi tạo Client với tên biến mới chống trùng lặp hệ thống
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': CHU_QUAN_PASSCODE } }
         });
 
         let activeOrders = [];
 
         async function loadInitialData() {
-            // Chỉ lấy các đơn chưa thanh toán ('pending' và 'cooking') về để xử lý
-            const { data: orders } = await supabase
+            // Lấy toàn bộ các đơn hàng chưa thanh toán hoàn tất (không bao gồm trạng thái 'paid')
+            const { data: orders, error } = await supabaseClient
                 .from('orders')
                 .select('*')
                 .not('status', 'eq', 'paid')
-                .order('id', { ascending: false }); // Đơn mới gửi xếp lên đầu cho dễ nhìn
+                .order('id', { ascending: false });
+                
+            if (error) {
+                console.error("Lỗi kết nối database:", error);
+                return;
+            }
                 
             activeOrders = orders || [];
             
-            renderBepOrders();   // Vẽ giao diện cho Bếp xem làm đồ
-            renderTableDebts();  // Vẽ giao diện tính tiền theo bàn
+            renderBepOrders();   // Cập nhật khu vực hiển thị chế biến món ăn
+            renderTableDebts();  // Cập nhật khu vực gom hóa đơn tính tiền tại quầy
 
-            // Tải doanh thu ngày hôm nay
+            // Tải tổng doanh thu ngày hôm nay
             const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
             document.getElementById('today-date').innerText = today;
             
-            const { data: revData } = await supabase.from('revenue').select('total').eq('date', today).maybeSingle();
+            const { data: revData } = await supabaseClient.from('revenue').select('total').eq('date', today).maybeSingle();
             document.getElementById('today-revenue').innerText = revData ? revData.total.toLocaleString() : "0";
         }
 
-
+        // Hiển thị danh sách chi tiết các đơn hàng lẻ để bếp đọc món
         function renderBepOrders() {
             const list = document.getElementById('orders-list');
-            if (activeOrders.length === 0) {
+            
+            // Ở khu vực chế biến, chỉ hiện các đơn cần làm (pending, cooking). Làm xong rồi thì ẩn đi cho sạch bếp.
+            const bepOrders = activeOrders.filter(o => o.status === 'pending' || o.status === 'cooking');
+
+            if (bepOrders.length === 0) {
                 list.innerHTML = "<p class='no-data'>Hiện tại bếp đã làm xong hết đồ, không có đơn chờ.</p>";
                 return;
             }
 
-            list.innerHTML = activeOrders.map(order => {
+            list.innerHTML = bepOrders.map(order => {
                 const timeStr = new Date(order.id).toLocaleTimeString('vi-VN');
                 return `
                     <div class="order-card ${order.status}">
@@ -162,11 +177,10 @@
             }).join('');
         }
 
-  
+        // Gom nhóm toàn bộ hóa đơn nợ của các đơn lẻ (bao gồm cả đơn đã làm xong đồ) theo số bàn
         function renderTableDebts() {
             const container = document.getElementById('table-debts-list');
             
-            // Dùng thuật toán gom nhóm tổng số tiền theo từng số bàn riêng biệt
             const debtsByTable = {};
             activeOrders.forEach(order => {
                 const table = order.table_number;
@@ -198,32 +212,32 @@
             }).join('');
         }
 
-
+        // Thay đổi tiến độ chế biến món ăn tại bếp
         async function updateStatus(orderId, status) {
-            // Nếu bếp làm xong đồ thì tạm thời đổi trạng thái trong DB để đổi màu/nút trực quan
-            await supabase.from('orders').update({ status: status }).eq('id', orderId);
+            await supabaseClient.from('orders').update({ status: status }).eq('id', orderId);
             loadInitialData();
         }
 
-        // Thanh toán toàn bộ hóa đơn của bàn (Xóa nợ gom và tính doanh thu)
+        // Thu tiền toàn bộ bàn, cộng dồn doanh thu ngày và chuyển trạng thái đơn hàng thành 'paid'
         async function payWholeTable(tableNumber, totalAmount) {
             if (!confirm(`Xác nhận thu tổng số tiền ${totalAmount.toLocaleString()} đ của [${tableNumber}] và tiễn khách?`)) return;
 
             const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
             
-            // 1. Cập nhật doanh thu tổng trong ngày hôm nay trên Supabase
-            const { data: currentRev } = await supabase.from('revenue').select('total').eq('date', today).maybeSingle();
+            // 1. Đồng bộ doanh thu tổng trong ngày lên hệ thống
+            const { data: currentRev } = await supabaseClient.from('revenue').select('total').eq('date', today).maybeSingle();
             const newTotal = (currentRev ? currentRev.total : 0) + totalAmount;
-            await supabase.from('revenue').upsert({ date: today, total: newTotal });
+            await supabaseClient.from('revenue').upsert({ date: today, total: newTotal });
             
-            // 2. Chuyển TẤT CẢ các đơn hàng lẻ thuộc bàn này sang trạng thái 'paid' (Thanh toán hoàn tất)
-            await supabase.from('orders').update({ status: 'paid' }).eq('table_number', tableNumber).not('status', 'eq', 'paid');
+            // 2. Chuyển tất cả các đơn hàng thuộc số bàn này sang trạng thái đã thanh toán hoàn tất
+            await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', tableNumber).not('status', 'eq', 'paid');
             
             alert(`✅ Đã thanh toán xong cho ${tableNumber}! Số tiền được cộng vào doanh thu.`);
             loadInitialData();
         }
 
-        supabase
+        // Cập nhật giao diện tự động thời gian thực (Realtime) mỗi khi có đơn hàng mới từ phục vụ
+        supabaseClient
           .channel('orders-realtime')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
               loadInitialData(); 
