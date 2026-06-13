@@ -43,92 +43,68 @@
     </main>
 
 <script>
-        const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
-        
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    // Chỉ khởi tạo nếu chưa có
+    if (!window.supabaseClient) {
+        window.supabaseClient = supabase.createClient("https://vfducmflkdlgwxvpiibv.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM", {
             global: { headers: { 'x-passcode': 'beut123' } }
         });
+    }
+    const client = window.supabaseClient;
 
-        // Hàm lấy ngày chuẩn YYYY-MM-DD để so khớp trong bảng revenue
-        function getTodayString() {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
+    const getToday = () => new Date().toISOString().split('T')[0];
 
-        async function loadInitialData() {
-            const { data: orders, error } = await supabaseClient.from('orders').select('*');
-            if (error) { console.error("Lỗi:", error); return; }
-            
-            const activeOrders = orders.filter(o => o.status !== 'paid');
-            renderOrders(activeOrders);
-            
-            // Lấy doanh thu từ bảng revenue dựa trên ngày hôm nay
-            const { data: revData } = await supabaseClient.from('revenue').select('total').eq('date', getTodayString()).maybeSingle();
-            document.getElementById('today-revenue').innerText = revData ? revData.total.toLocaleString() : "0";
-        }
+    async function loadData() {
+        const { data: orders, error } = await client.from('orders').select('*').neq('status', 'paid');
+        if (error) console.error("Lỗi tải đơn:", error);
 
-        function renderOrders(orders) {
-            const list = document.getElementById('orders-list');
-            const debtList = document.getElementById('table-debts-list');
+        // Render Đơn hàng
+        document.getElementById('orders-list').innerHTML = (orders || []).map(o => `
+            <div class="order-card">
+                <p><b>Bàn: ${o.table_number}</b></p>
+                <p>Món: ${Array.isArray(o.items) ? o.items.join(', ') : o.items}</p>
+                <button class="btn btn-cook" onclick="updateStatus(${o.id}, '${o.status === 'pending' ? 'cooking' : 'done'}')">
+                    ${o.status === 'pending' ? '🍳 Bắt đầu làm' : '✅ Xong'}
+                </button>
+            </div>
+        `).join('');
 
-            list.innerHTML = orders.map(o => {
-                const itemsDisplay = Array.isArray(o.items) ? o.items.join(', ') : o.items;
-                return `
-                <div class="order-card">
-                    <h3>📍 Bàn: ${o.table_number}</h3>
-                    <p>Món: <strong>${itemsDisplay}</strong></p>
-                    <p>Trạng thái: ${o.status}</p>
-                    <button class="btn-status" style="background:${o.status === 'pending' ? '#e67e22' : '#3498db'}" 
-                        onclick="updateStatus('${o.id}', '${o.status === 'pending' ? 'cooking' : 'done'}')">
-                        ${o.status === 'pending' ? '🍳 Bắt đầu làm' : '✅ Xong'}
-                    </button>
-                </div>
-            `}).join('');
+        // Render Bảng tính tiền
+        const debts = (orders || []).reduce((acc, o) => {
+            acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
+            return acc;
+        }, {});
 
-            const debts = {};
-            orders.forEach(o => debts[o.table_number] = (debts[o.table_number] || 0) + (o.total || 0));
-            debtList.innerHTML = Object.keys(debts).map(t => `
-                <div class="table-debt-row">
-                    <span>Bàn ${t}: <strong>${debts[t].toLocaleString()}đ</strong></span>
-                    <button class="btn-pay-table" onclick="payTable('${t}', ${debts[t]})">💵 Thu tiền</button>
-                </div>
-            `).join('');
-        }
+        document.getElementById('table-debts-list').innerHTML = Object.entries(debts).map(([table, total]) => `
+            <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                <span>Bàn ${table}: <b>${total.toLocaleString()}đ</b></span>
+                <button class="btn btn-pay" onclick="payTable('${table}', ${total})">💵 Thu tiền</button>
+            </div>
+        `).join('');
 
-        async function updateStatus(orderId, status) {
-            const { error } = await supabaseClient
-                .from('orders')
-                .update({ status: status })
-                .eq('id', parseInt(orderId));
+        // Doanh thu
+        const { data: rev } = await client.from('revenue').select('total').eq('date', getToday()).maybeSingle();
+        document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
+    }
 
-            if (error) alert("Lỗi Database: " + error.message);
-            else loadInitialData();
-        }
+    async function updateStatus(id, status) {
+        await client.from('orders').update({ status }).eq('id', id);
+        loadData();
+    }
 
-        // Cập nhật hàm Thu tiền để tự cộng doanh thu
-        async function payTable(table, amount) {
-            if(!confirm("Xác nhận thu " + amount.toLocaleString() + "đ của bàn " + table + " và cộng vào doanh thu?")) return;
+    async function payTable(table, amount) {
+        if(!confirm("Thu tiền bàn " + table + "?")) return;
+        
+        await client.from('orders').update({ status: 'paid' }).eq('table_number', table);
+        
+        const { data: rev } = await client.from('revenue').select('total').eq('date', getToday()).maybeSingle();
+        const newTotal = (rev?.total || 0) + amount;
+        await client.from('revenue').upsert({ date: getToday(), total: newTotal }, { onConflict: 'date' });
+        
+        loadData();
+    }
 
-            const today = getTodayString();
-
-            // 1. Chuyển đơn thành 'paid'
-            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
-            if (orderError) { alert("Lỗi update đơn: " + orderError.message); return; }
-
-            // 2. Lấy doanh thu cũ và cộng dồn
-            const { data: revData } = await supabaseClient.from('revenue').select('total').eq('date', today).maybeSingle();
-            const currentTotal = revData ? revData.total : 0;
-            
-            const { error: revError } = await supabaseClient.from('revenue').upsert({ date: today, total: currentTotal + amount }, { onConflict: 'date' });
-            if (revError) { alert("Lỗi cộng doanh thu: " + revError.message); return; }
-
-            alert("✅ Thanh toán thành công!");
-            loadInitialData();
-        }
-
-        supabaseClient.channel('realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadInitialData).subscribe();
-        window.onload = loadInitialData;
-    </script>
+    client.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadData).subscribe();
+    loadData();
+</script>
 </body>
 </html>
