@@ -3,401 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📱 Phục vụ - Gọi món nhanh</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>☕ COFFEE POS - Hệ Thống Điều Hướng</title>
     <style>
-        /* 🎨 HỆ THỐNG CSS LAYOUT CHUYÊN NGHIỆP */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #fcf8f5;
+            background: linear-gradient(135deg, #f5ece5 0%, #e0d7cf 100%);
             margin: 0;
             padding: 0;
-            color: #333;
-        }
-
-        header {
-            background: #4e3629;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
-
-        .waiter-container {
             display: flex;
-            gap: 20px;
-            padding: 20px;
-            max-width: 1300px;
-            margin: 0 auto;
-            box-sizing: border-box;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
-
-        .menu-section {
-            flex: 1.7;
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            box-sizing: border-box;
-        }
-        .menu-section h2 { margin-top: 0; color: #4e3629; font-size: 20px; border-bottom: 2px solid #f5ece5; padding-bottom: 8px; }
-
-        .cart-section {
-            flex: 1;
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            border: 2px solid #e7a460;
-            height: fit-content;
-            position: sticky;
-            top: 20px;
-            box-shadow: 0 4px 16px rgba(231, 164, 96, 0.1);
-            box-sizing: border-box;
-        }
-        .cart-section h2 { margin-top: 0; color: #e67e22; font-size: 20px; }
-
-        #search-bar {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 15px;
-            box-sizing: border-box;
-            outline: none;
-        }
-        #search-bar:focus { border-color: #e7a460; }
-
-        .category-tabs {
-            display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px;
-        }
-        .category-tabs::-webkit-scrollbar { display: none; }
-        
-        .tab-btn {
-            background: #e0d7cf; border: none; padding: 10px 18px; border-radius: 20px;
-            font-weight: bold; color: #4e3629; cursor: pointer; white-space: nowrap; font-size: 13px;
-        }
-        .tab-btn.active { background: #e7a460; color: white; }
-
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-        }
-        .menu-item {
-            background: #fff8f2;
-            border: 1px solid #eddcd0;
-            padding: 16px;
-            border-radius: 12px;
+        .portal-container {
             text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(78, 54, 41, 0.15);
+            max-width: 450px;
+            width: 90%;
+        }
+        h1 {
+            color: #4e3629;
+            margin-bottom: 10px;
+            font-size: 26px;
+        }
+        p {
+            color: #777;
+            margin-bottom: 30px;
+            font-size: 15px;
+        }
+        .btn-group {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            min-height: 95px;
+            gap: 15px;
         }
-        .menu-item:hover { transform: translateY(-3px); border-color: #e7a460; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .menu-item h4 { margin: 0 0 8px 0; color: #4e3629; font-size: 15px; }
-        .money { color: #e67e22; font-weight: bold; margin: 0; font-size: 15px; }
-
-        .table-input { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-        .table-input input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; }
-
-        .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #eee; }
-        .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-submit { width: 100%; background: #27ae60; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
-
-        /* POPUP OPTIONS */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-box { background: white; padding: 22px; border-radius: 16px; width: 90%; max-width: 350px; text-align: center; }
-        .option-group { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
-        .option-btn { background: #f9f9f9; border: 2px solid #eef0f2; padding: 12px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; }
-        .option-btn.selected { border-color: #27ae60; background: #e8f8f0; color: #27ae60; }
-        .modal-actions { display: flex; gap: 12px; }
-        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-cancel { background: #e0e0e0; }
-        .btn-confirm { background: #27ae60; color: white; }
-
-        @media (max-width: 768px) {
-            .waiter-container { flex-direction: column; padding: 10px; }
-            .menu-section, .cart-section { width: 100%; }
+        .portal-btn {
+            display: block;
+            text-decoration: none;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .btn-order {
+            background-color: #e7a460;
+            color: white;
+        }
+        .btn-order:hover {
+            background-color: #d68f4b;
+            transform: translateY(-2px);
+        }
+        .btn-kitchen {
+            background-color: #2c3e50;
+            color: white;
+        }
+        .btn-kitchen:hover {
+            background-color: #1a252f;
+            transform: translateY(-2px);
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>☕ COFFEE POS - GIAO DIỆN PHỤC VỤ</h1>
-    </header>
 
-    <main class="waiter-container">
-        <section class="menu-section">
-            <h2>Danh sách món</h2>
-            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
+    <div class="portal-container">
+        <h1>☕ COFFEE POS SYSTEM</h1>
+        <p>Vui lòng chọn vai trò làm việc của bạn để tiếp tục</p>
+        
+        <div class="btn-group">
+            <a href="order.html" class="portal-btn btn-order">📱 Giao diện PHỤC VỤ (Gọi Món)</a>
             
-            <div class="category-tabs">
-                <button class="tab-btn active" onclick="switchCategory('ALL', event)">✨ Tất cả</button>
-                <button class="tab-btn" onclick="switchCategory('TRÀ', event)">🍵 Trà</button>
-                <button class="tab-btn" onclick="switchCategory('CÀ PHÊ', event)">☕ Cà phê</button>
-                <button class="tab-btn" onclick="switchCategory('TRÀ SỮA', event)">🧋 Trà sữa</button>
-                <button class="tab-btn" onclick="switchCategory('SỮA TƯƠI', event)">🥛 Sữa tươi</button>
-                <button class="tab-btn" onclick="switchCategory('SODA', event)">🍹 Soda</button>
-                <button class="tab-btn" onclick="switchCategory('NƯỚC ÉP', event)">🍹 Nước ép</button>
-                <button class="tab-btn" onclick="switchCategory('MATCHA', event)">🟢 Matcha</button>
-                <button class="tab-btn" onclick="switchCategory('SỮA CHUA', event)">🍧 Sữa chua</button>
-                <button class="tab-btn" onclick="switchCategory('CACAO', event)">🍫 Cacao</button>
-                <button class="tab-btn" onclick="switchCategory('ĐỒ NÓNG', event)">🔥 Đồ nóng</button>
-                <button class="tab-btn" onclick="switchCategory('ĂN VẶT', event)">🍟 Ăn vặt</button>
-            </div>
-
-            <div id="menu-grid" class="menu-grid"></div>
-        </section>
-
-        <section class="cart-section">
-            <h2>🛒 Đơn bàn hiện tại</h2>
-            <div class="table-input">
-                <label>Số bàn: </label>
-                <input type="text" id="table-number" placeholder="Ví dụ: Bàn 5" required>
-            </div>
-            <div id="cart-items"></div>
-            <div class="cart-total">
-                <h3><span>Tổng cộng:</span> <span id="cart-total-price" class="money">0</span> đ</h3>
-                <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp</button>
-            </div>
-        </section>
-    </main>
-
-    <div class="modal-overlay" id="option-modal">
-        <div class="modal-box">
-            <h3 id="modal-item-name">Tùy chọn món</h3>
-            <div class="option-group" id="modal-options-container"></div>
-            <div class="modal-actions">
-                <button class="btn-modal btn-cancel" onclick="closeModal()">Hủy</button>
-                <button class="btn-modal btn-confirm" onclick="confirmAddToCart()">Thêm vào đơn</button>
-            </div>
+            <a href="admin.html" class="portal-btn btn-kitchen">👨‍🍳 Giao diện NHÀ BẾP (Nhận Đơn)</a>
         </div>
     </div>
 
-    <script>
-        const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
-        
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let menu = [];
-        let cart = {};
-        let currentCategory = 'ALL';
-        
-        let tempItem = null;
-        let selectedOptionName = '';
-        let selectedOptionPriceDelta = 0;
-
-        async function loadMenu() {
-            const grid = document.getElementById('menu-grid');
-            grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #e67e22;'>⏳ Đang tải dữ liệu từ Supabase...</p>";
-            
-            try {
-                const { data, error } = await supabaseClient.from('menu').select('*');
-                
-                if (error) {
-                    grid.innerHTML = `
-                        <div style='grid-column: 1/-1; padding: 15px; background: #fdf2f2; color: #9b1c1c; border-radius: 8px;'>
-                            <strong>❌ Lỗi bảo mật hoặc cấu hình Supabase:</strong> ${error.message}<br>
-                            <small>Mẹo: Hãy chắc chắn bạn đã kích hoạt hoặc tạo Policy ALLOW SELECT cho bảng "menu" trên Supabase!</small>
-                        </div>`;
-                    return;
-                }
-                
-                menu = data || [];
-                renderMenu();
-            } catch (err) {
-                grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: red;'>❌ Lỗi: " + err.message + "</p>";
-            }
-        }
-
-        function renderMenu() {
-            const grid = document.getElementById('menu-grid');
-            const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
-
-            const filteredItems = menu.filter(item => {
-                const itemCat = (item.category || '').toString().toUpperCase().trim();
-                const targetCat = currentCategory.toUpperCase().trim();
-                
-                const matchCategory = (targetCat === 'ALL' || itemCat === targetCat);
-                const matchSearch = (item.name || '').toLowerCase().includes(searchText);
-                return matchCategory && matchSearch;
-            });
-
-            if (filteredItems.length === 0) {
-                grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #888;'>Không có món nào trong danh mục này.</p>";
-                return;
-            }
-
-            grid.innerHTML = filteredItems.map(item => `
-                <div class="menu-item" onclick="handleItemClick(${item.id})">
-                    <h4>${item.name}</h4>
-                    <p class="money">${Number(item.price || 0).toLocaleString()} đ</p>
-                </div>
-            `).join('');
-        }
-
-        function handleItemClick(id) {
-            const item = menu.find(m => m.id === id);
-            if(!item) return;
-            tempItem = item;
-            
-            const container = document.getElementById('modal-options-container');
-            container.innerHTML = ''; 
-            document.getElementById('modal-item-name').innerText = item.name;
-
-            const itemCategoryNormalized = (item.category || '').toString().toUpperCase().trim();
-
-            if (item.name.toUpperCase().includes('COMBO')) {
-                selectedOptionName = 'Chiên thường';
-                selectedOptionPriceDelta = 0;
-                container.innerHTML = `
-                    <button class="option-btn selected" id="opt-1" onclick="changeActiveOption('Chiên thường', 0, 'opt-1')"><span>🍟 Chiên thường</span> <span>+0đ</span></button>
-                    <button class="option-btn" id="opt-2" onclick="changeActiveOption('Chiên mắm', 0, 'opt-2')"><span>🍯 Chiên mắm</span> <span>+0đ</span></button>
-                `;
-                document.getElementById('option-modal').style.display = 'flex';
-            } else if (['TRÀ', 'MATCHA', 'CACAO', 'TRÀ SỮA', 'SỮA TƯƠI'].includes(itemCategoryNormalized)) {
-                selectedOptionName = 'Thường';
-                selectedOptionPriceDelta = 0;
-
-                let toppingPrice = (itemCategoryNormalized === 'TRÀ' || itemCategoryNormalized === 'TRÀ SỮA') ? 5000 : 4000;
-                let toppingHtml = '';
-                
-                if (['MATCHA', 'CACAO'].includes(itemCategoryNormalized)) {
-                    toppingHtml = `
-                        <button class="option-btn" id="opt-k2" onclick="changeActiveOption('Kem trứng', 5000, 'opt-k2')"><span>🥚 Thêm Kem Trứng</span> <span>+5.000đ</span></button>
-                        <button class="option-btn" id="opt-k3" onclick="changeActiveOption('Kem muối', 5000, 'opt-k3')"><span>🧂 Thêm Kem Muối</span> <span>+5.000đ</span></button>
-                    `;
-                } else {
-                    toppingHtml = `
-                        <button class="option-btn" id="opt-k2" onclick="changeActiveOption('Kem sữa', ${toppingPrice}, 'opt-k2')"><span>🥛 Thêm Kem Sữa</span> <span>+${toppingPrice.toLocaleString()}đ</span></button>
-                    `;
-                }
-
-                container.innerHTML = `
-                    <button class="option-btn selected" id="opt-k1" onclick="changeActiveOption('Thường', 0, 'opt-k1')"><span>🥤 Món bình thường</span> <span>+0đ</span></button>
-                    ${toppingHtml}
-                `;
-                document.getElementById('option-modal').style.display = 'flex';
-            } else {
-                executeAddToCart(item, '', 0);
-            }
-        }
-
-        function changeActiveOption(name, priceDelta, btnId) {
-            selectedOptionName = name;
-            selectedOptionPriceDelta = priceDelta;
-            const buttons = document.querySelectorAll('.option-btn');
-            buttons.forEach(btn => btn.classList.remove('selected'));
-            document.getElementById(btnId).classList.add('selected');
-        }
-
-        function closeModal() {
-            document.getElementById('option-modal').style.display = 'none';
-            tempItem = null;
-        }
-
-        function confirmAddToCart() {
-            if (tempItem) {
-                let suffix = (selectedOptionName === 'Thường' || selectedOptionName === 'Chiên thường') ? '' : ` (${selectedOptionName})`;
-                executeAddToCart(tempItem, suffix, selectedOptionPriceDelta);
-            }
-            closeModal();
-        }
-
-        function executeAddToCart(item, suffix, priceDelta) {
-            const uniqueKey = item.id + suffix;
-            if (!cart[uniqueKey]) {
-                cart[uniqueKey] = {
-                    id: item.id,
-                    key: uniqueKey,
-                    name: item.name + suffix,
-                    price: Number(item.price || 0) + priceDelta, 
-                    quantity: 1
-                };
-            } else {
-                cart[uniqueKey].quantity += 1;
-            }
-            renderCart();
-        }
-
-        function changeQty(uniqueKey, delta) {
-            if (!cart[uniqueKey]) return;
-            cart[uniqueKey].quantity += delta;
-            if (cart[uniqueKey].quantity <= 0) delete cart[uniqueKey];
-            renderCart();
-        }
-
-        function renderCart() {
-            const container = document.getElementById('cart-items');
-            let total = 0;
-            
-            container.innerHTML = Object.values(cart).map(item => {
-                total += item.price * item.quantity;
-                return `
-                    <div class="cart-row">
-                        <div style="flex:1;"><strong>${item.name}</strong></div>
-                        <div style="margin-right:15px;">
-                            <button class="btn-qty" onclick="changeQty('${item.key}', -1)">-</button>
-                            <span>${item.quantity}</span>
-                            <button class="btn-qty" onclick="changeQty('${item.key}', 1)">+</button>
-                        </div>
-                        <div class="money">${(item.price * item.quantity).toLocaleString()} đ</div>
-                    </div>
-                `;
-            }).join('');
-            document.getElementById('cart-total-price').innerText = total.toLocaleString();
-        }
-
-        function switchCategory(category, event) {
-            currentCategory = category;
-            const buttons = document.querySelectorAll('.tab-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            if(event && event.target) event.target.classList.add('active');
-            renderMenu();
-        }
-
-        function filterMenu() { renderMenu(); }
-
-        async function submitOrder() {
-            const table = document.getElementById('table-number').value.trim();
-            if (!table) return alert("Vui lòng nhập số bàn!");
-            if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
-
-            const btnSubmit = document.querySelector('.btn-submit');
-            btnSubmit.disabled = true;
-
-            const items = Object.values(cart).map(i => `${i.name} (x${i.quantity})`);
-            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
-
-            try {
-                const { error } = await supabaseClient.from('orders').insert([
-                    { table_number: table, items: items, total: total, status: 'pending' }
-                ]);
-
-                if (!error) {
-                    alert("🚀 Gửi đơn thành công!");
-                    cart = {};
-                    document.getElementById('table-number').value = '';
-                    renderCart();
-                } else {
-                    alert("Lỗi: " + error.message);
-                }
-            } catch (error) {
-                alert("Lỗi mạng!");
-            } finally {
-                btnSubmit.disabled = false;
-            }
-        }
-
-        window.onload = loadMenu;
-    </script>
 </body>
 </html>

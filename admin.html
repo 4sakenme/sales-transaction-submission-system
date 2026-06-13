@@ -4,80 +4,165 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>👩‍🍳 Quản lý - Chủ quán / Bếp</title>
-    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Bố cục chia đôi màn hình trên máy tính, xếp dọc trên điện thoại */
+        /* 🎨 HỆ THỐNG CSS ĐỒNG BỘ TÔNG MÀU QUÁN COFFEE POS */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fcf8f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background: #4e3629;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
+        
+        .btn-back {
+            position: absolute;
+            left: 20px;
+            top: 16px;
+            background: #e7a460;
+            color: white;
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-back:hover { background: #d68f4b; }
+
+        /* Thanh doanh thu tổng */
+        .revenue-bar {
+            background: #fff;
+            border-bottom: 2px solid #eddcd0;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .revenue-bar h3 { margin: 0; color: #4e3629; font-size: 18px; }
+        .money-large { color: #27ae60; font-size: 24px; font-weight: bold; margin: 0 5px; }
+
+        /* Bố cục chính chia đôi màn hình */
         .admin-main-layout {
             display: flex;
             gap: 20px;
-            padding: 15px;
-            flex-wrap: wrap;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            box-sizing: border-box;
         }
+        
+        /* Cột trái: Nhà Bếp */
         .bep-section {
-            flex: 2;
-            min-width: 320px;
+            flex: 1.6;
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
         }
+        .bep-section h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #fdf2f2; }
+
+        /* Cột phải: Thu Ngân Tính Tiền */
         .thungon-section {
             flex: 1;
-            min-width: 300px;
-            background: #fff6ee;
-            padding: 15px;
-            border-radius: 12px;
+            background: #fffdfb;
+            padding: 20px;
+            border-radius: 16px;
             border: 2px solid #e7a460;
             height: fit-content;
+            position: sticky;
+            top: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 16px rgba(231, 164, 96, 0.08);
         }
+        .thungon-section h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #e7a460; }
         
-        /* CSS cho từng đơn hàng của bếp */
+        /* CSS chi tiết thẻ đơn hàng ở bếp */
         .order-card {
-            border-left: 6px solid #e67e22; /* Cam - Đang chờ làm */
+            border-left: 6px solid #e67e22; /* Cam - Đang chờ */
             margin-bottom: 15px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: #fffbf7;
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border-top: 1px solid #eddcd0;
+            border-right: 1px solid #eddcd0;
+            border-bottom: 1px solid #eddcd0;
         }
-        .order-card.cooking { border-left-color: #3498db; } /* Xanh dương - Đang làm */
-        .order-card.done_cooking { border-left-color: #2ecc71; } /* Xanh lá - Đã làm xong món */
+        .order-card.cooking { border-left-color: #3498db; background: #f7faff; } /* Xanh dương - Đang làm */
         
-        /* CSS cho danh sách tổng hợp nợ theo bàn */
+        .order-card h3 { margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; }
+        .item-list { padding-left: 20px; margin: 0 0 15px 0; }
+        .item-list li { padding: 4px 0; font-size: 15px; color: #4e3629; }
+
+        /* Nút bấm tiến độ Nhà Bếp */
+        .btn-status {
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .btn-cook { background: #e67e22; color: white; }
+        .btn-cook:hover { background: #d35400; }
+        
+        /* CSS cho hàng tính tiền quầy Thu Ngân */
         .table-debt-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px;
+            padding: 14px;
             background: white;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            border: 1px solid #eddcd0;
         }
         .btn-pay-table {
             background: #27ae60;
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
+            padding: 10px 16px;
+            border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
+            transition: 0.2s;
         }
         .btn-pay-table:hover { background: #219653; }
         
         .no-data {
-            color: #777;
+            color: #999;
             text-align: center;
             font-style: italic;
-            padding: 15px;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        /* Responsive di động */
+        @media (max-width: 768px) {
+            .admin-main-layout { flex-direction: column; padding: 10px; }
+            .bep-section, .thungon-section { width: 100%; position: static; }
         }
     </style>
 </head>
 <body>
     <header>
+        <a href="index.html" class="btn-back">⬅️ Cổng chào</a>
         <h1>👩‍🍳 KHU VỰC CHỦ QUÁN (BẾP & THU NGÂN)</h1>
-        <nav>
-            <a href="admin.html" class="active">👩‍🍳 Giao diện tổng hợp</a>
-        </nav>
     </header>
 
     <div class="revenue-bar">
@@ -87,7 +172,7 @@
     <main class="admin-main-layout">
         
         <section class="bep-section">
-            <h2 style="color: #c0392b;">🔥 ĐƠN HÀNG CHỜ CHẾ BIẾN (Mới nhất xếp trên)</h2>
+            <h2 style="color: #c0392b;">🔥 ĐƠN HÀNG CHỜ CHẾ BIẾN</h2>
             <div id="orders-list" class="orders-list"></div>
         </section>
 
@@ -101,13 +186,13 @@
 
     <script>
         // =========================================================
-        // 🔑 CẤU HÌNH SUPABASE (Đã đổi tên biến thành supabaseClient)
+        // 🔑 CẤU HÌNH KẾT NỐI SUPABASE CHUẨN ĐỒNG BỘ 100%
         // =========================================================
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "sb_publishable_z-cNICZB5TO16x8...mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM"; // Chuỗi khóa bảo mật của bạn
+        // Đã cập nhật lại đầy đủ Key ẩn danh chính xác của bạn
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         const CHU_QUAN_PASSCODE = "beut123"; 
 
-        // Khởi tạo Client với tên biến mới chống trùng lặp hệ thống
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': CHU_QUAN_PASSCODE } }
         });
@@ -115,7 +200,7 @@
         let activeOrders = [];
 
         async function loadInitialData() {
-            // Lấy toàn bộ các đơn hàng chưa thanh toán hoàn tất (không bao gồm trạng thái 'paid')
+            // Lấy toàn bộ các đơn hàng chưa thanh toán hoàn tất (status khác 'paid')
             const { data: orders, error } = await supabaseClient
                 .from('orders')
                 .select('*')
@@ -129,8 +214,8 @@
                 
             activeOrders = orders || [];
             
-            renderBepOrders();   // Cập nhật khu vực hiển thị chế biến món ăn
-            renderTableDebts();  // Cập nhật khu vực gom hóa đơn tính tiền tại quầy
+            renderBepOrders();   
+            renderTableDebts();  
 
             // Tải tổng doanh thu ngày hôm nay
             const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
@@ -140,36 +225,35 @@
             document.getElementById('today-revenue').innerText = revData ? revData.total.toLocaleString() : "0";
         }
 
-        // Hiển thị danh sách chi tiết các đơn hàng lẻ để bếp đọc món
+        // Hiển thị đơn lẻ tại bếp (chỉ lấy đơn dạng 'pending' hoặc 'cooking')
         function renderBepOrders() {
             const list = document.getElementById('orders-list');
-            
-            // Ở khu vực chế biến, chỉ hiện các đơn cần làm (pending, cooking). Làm xong rồi thì ẩn đi cho sạch bếp.
             const bepOrders = activeOrders.filter(o => o.status === 'pending' || o.status === 'cooking');
 
             if (bepOrders.length === 0) {
-                list.innerHTML = "<p class='no-data'>Hiện tại bếp đã làm xong hết đồ, không có đơn chờ.</p>";
+                list.innerHTML = "<p class='no-data'>🎉 Bếp đã làm xong hết đồ, không có đơn chờ!</p>";
                 return;
             }
 
             list.innerHTML = bepOrders.map(order => {
                 const timeStr = new Date(order.id).toLocaleTimeString('vi-VN');
+                const isPending = order.status === 'pending';
                 return `
                     <div class="order-card ${order.status}">
                         <h3>
-                            <span>📍 ${order.table_number}</span>
-                            <span style="font-size:13px; color:#666;">🕒 ${timeStr}</span>
+                            <span style="color: #4e3629; font-weight: bold;">📍 ${order.table_number}</span>
+                            <span style="font-size:13px; color:#888;">🕒 ${timeStr}</span>
                         </h3>
                         <ul class="item-list">
                             ${order.items.map(item => `<li>✨ <strong>${item}</strong></li>`).join('')}
                         </ul>
                         <p style="font-size: 14px; color: #555; margin-top: 10px;">
-                            Trạng thái: <strong>${order.status === 'pending' ? '⏳ Đang chờ làm' : '👨‍🍳 Đang chế biến...'}</strong>
+                            Trạng thái: <strong>${isPending ? '⏳ Đang chờ làm' : '👨‍🍳 Đang chế biến...'}</strong>
                         </p>
-                        <div style="margin-top: 10px;">
-                            ${order.status === 'pending' ? 
+                        <div style="margin-top: 12px;">
+                            ${isPending ? 
                                 `<button class="btn-status btn-cook" onclick="updateStatus(${order.id}, 'cooking')">🍳 Bắt đầu làm món</button>` : 
-                                `<button class="btn-status btn-pay" style="background:#34495e;" onclick="updateStatus(${order.id}, 'done_cooking')">✅ Đã làm xong đồ</button>`
+                                `<button class="btn-status" style="background:#27ae60; color:white;" onclick="updateStatus(${order.id}, 'done_cooking')">✅ Đã làm xong đồ</button>`
                             }
                         </div>
                     </div>
@@ -177,7 +261,7 @@
             }).join('');
         }
 
-        // Gom nhóm toàn bộ hóa đơn nợ của các đơn lẻ (bao gồm cả đơn đã làm xong đồ) theo số bàn
+        // Gom nhóm toàn bộ hóa đơn nợ theo bàn tự động ở quầy thu ngân
         function renderTableDebts() {
             const container = document.getElementById('table-debts-list');
             
@@ -192,7 +276,7 @@
 
             const tableKeys = Object.keys(debtsByTable);
             if (tableKeys.length === 0) {
-                container.innerHTML = "<p class='no-data'>Không có bàn nào đang ngồi nợ tiền.</p>";
+                container.innerHTML = "<p class='no-data'>Hiện tại không có bàn nào đang nợ tiền.</p>";
                 return;
             }
 
@@ -212,31 +296,31 @@
             }).join('');
         }
 
-        // Thay đổi tiến độ chế biến món ăn tại bếp
+        // Thay đổi tiến độ bếp
         async function updateStatus(orderId, status) {
             await supabaseClient.from('orders').update({ status: status }).eq('id', orderId);
             loadInitialData();
         }
 
-        // Thu tiền toàn bộ bàn, cộng dồn doanh thu ngày và chuyển trạng thái đơn hàng thành 'paid'
+        // Xử lý thu tiền, gộp hóa đơn và đồng bộ doanh thu cuối ngày
         async function payWholeTable(tableNumber, totalAmount) {
             if (!confirm(`Xác nhận thu tổng số tiền ${totalAmount.toLocaleString()} đ của [${tableNumber}] và tiễn khách?`)) return;
 
             const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
             
-            // 1. Đồng bộ doanh thu tổng trong ngày lên hệ thống
+            // 1. Đồng bộ doanh thu ngày
             const { data: currentRev } = await supabaseClient.from('revenue').select('total').eq('date', today).maybeSingle();
             const newTotal = (currentRev ? currentRev.total : 0) + totalAmount;
             await supabaseClient.from('revenue').upsert({ date: today, total: newTotal });
             
-            // 2. Chuyển tất cả các đơn hàng thuộc số bàn này sang trạng thái đã thanh toán hoàn tất
+            // 2. Chuyển trạng thái đơn hàng sang đã thanh toán 'paid'
             await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', tableNumber).not('status', 'eq', 'paid');
             
-            alert(`✅ Đã thanh toán xong cho ${tableNumber}! Số tiền được cộng vào doanh thu.`);
+            alert(`✅ Đã thanh toán xong cho ${tableNumber}! Số tiền đã được tính vào doanh thu.`);
             loadInitialData();
         }
 
-        // Cập nhật giao diện tự động thời gian thực (Realtime) mỗi khi có đơn hàng mới từ phục vụ
+        // Lắng nghe Realtime cập nhật tức thì khi có biến động từ bàn phục vụ gửi sang
         supabaseClient
           .channel('orders-realtime')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
