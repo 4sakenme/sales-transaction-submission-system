@@ -42,14 +42,19 @@
         </section>
     </main>
 
-    <script>
+<script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         
-        // Cấu hình header mật khẩu để vượt qua RLS
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': 'beut123' } }
         });
+
+        // Hàm lấy ngày chuẩn YYYY-MM-DD để so khớp trong bảng revenue
+        function getTodayString() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
 
         async function loadInitialData() {
             const { data: orders, error } = await supabaseClient.from('orders').select('*');
@@ -58,8 +63,8 @@
             const activeOrders = orders.filter(o => o.status !== 'paid');
             renderOrders(activeOrders);
             
-            const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(/\//g, '-');
-            const { data: revData } = await supabaseClient.from('revenue').select('total').eq('date', today).maybeSingle();
+            // Lấy doanh thu từ bảng revenue dựa trên ngày hôm nay
+            const { data: revData } = await supabaseClient.from('revenue').select('total').eq('date', getTodayString()).maybeSingle();
             document.getElementById('today-revenue').innerText = revData ? revData.total.toLocaleString() : "0";
         }
 
@@ -68,7 +73,6 @@
             const debtList = document.getElementById('table-debts-list');
 
             list.innerHTML = orders.map(o => {
-                // Hiển thị nội dung đơn hàng (Items)
                 const itemsDisplay = Array.isArray(o.items) ? o.items.join(', ') : o.items;
                 return `
                 <div class="order-card">
@@ -96,17 +100,31 @@
             const { error } = await supabaseClient
                 .from('orders')
                 .update({ status: status })
-                .eq('id', parseInt(orderId)); // Ép kiểu số tránh lỗi null constraint
+                .eq('id', parseInt(orderId));
 
             if (error) alert("Lỗi Database: " + error.message);
             else loadInitialData();
         }
 
+        // Cập nhật hàm Thu tiền để tự cộng doanh thu
         async function payTable(table, amount) {
-            if(!confirm("Thu tiền bàn " + table + "?")) return;
-            const { error } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
-            if (error) alert("Lỗi: " + error.message);
-            else loadInitialData();
+            if(!confirm("Xác nhận thu " + amount.toLocaleString() + "đ của bàn " + table + " và cộng vào doanh thu?")) return;
+
+            const today = getTodayString();
+
+            // 1. Chuyển đơn thành 'paid'
+            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
+            if (orderError) { alert("Lỗi update đơn: " + orderError.message); return; }
+
+            // 2. Lấy doanh thu cũ và cộng dồn
+            const { data: revData } = await supabaseClient.from('revenue').select('total').eq('date', today).maybeSingle();
+            const currentTotal = revData ? revData.total : 0;
+            
+            const { error: revError } = await supabaseClient.from('revenue').upsert({ date: today, total: currentTotal + amount }, { onConflict: 'date' });
+            if (revError) { alert("Lỗi cộng doanh thu: " + revError.message); return; }
+
+            alert("✅ Thanh toán thành công!");
+            loadInitialData();
         }
 
         supabaseClient.channel('realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadInitialData).subscribe();
