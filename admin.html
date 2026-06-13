@@ -12,13 +12,13 @@
         .revenue-bar { background: #fff; border-bottom: 2px solid #eddcd0; padding: 15px; text-align: center; }
         .money-large { color: #27ae60; font-size: 24px; font-weight: bold; }
         
-        /* GIỮ NGUYÊN LAYOUT VÀ STYLE CŨ */
+        /* ĐÚNG MẪU 2 CỘT GIAO DIỆN CŨ TRUYỀN THỐNG */
         .admin-main-layout { display: flex; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
         .bep-section { flex: 1.6; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         .thungon-section { flex: 1; background: #fffdfb; padding: 20px; border-radius: 16px; border: 2px solid #e7a460; height: fit-content; }
         
         .order-card { margin-bottom: 15px; background: #fffbf7; padding: 15px; border-radius: 12px; border: 1px solid #eddcd0; }
-        .btn-status { border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; color: white; margin-top: 10px; transition: 0.3s; }
+        .btn-status { border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; color: white; margin-top: 10px; transition: 0.3s; display: block; text-align: center; text-decoration: none; }
         .table-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eddcd0; }
         .btn-pay-table { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         @media (max-width: 768px) { .admin-main-layout { flex-direction: column; } }
@@ -49,7 +49,6 @@
     </main>
 
 <script>
-    // Khởi tạo client an toàn tránh lỗi redeclaration
     let adminSupabase;
     if (!window.supabaseClientInstance) {
         window.supabaseClientInstance = supabase.createClient("https://vfducmflkdlgwxvpiibv.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM", {
@@ -71,66 +70,89 @@
     async function loadData() {
         document.getElementById('display-date').innerText = getDisplayDate();
 
-        // Lấy các đơn chưa thanh toán
+        // Tải các đơn chưa thanh toán lên màn hình
         const { data: orders, error } = await adminSupabase.from('orders').select('*').neq('status', 'paid').order('id', { ascending: true });
         if (error) { console.error("Lỗi tải đơn:", error); return; }
 
-        // Render danh sách đơn ở Bếp (Giao diện xếp dọc truyền thống)
-        document.getElementById('orders-list').innerHTML = (orders || []).map(o => {
-            let itemsHTML = '';
-            if (Array.isArray(o.items)) {
-                itemsHTML = `<ul>${o.items.map(item => `<li>${item}</li>`).join('')}</ul>`;
-            } else {
-                itemsHTML = `<p>Món: <strong>${o.items || ''}</strong></p>`;
-            }
+        const ordersListContainer = document.getElementById('orders-list');
+        
+        if (!orders || orders.length === 0) {
+            ordersListContainer.innerHTML = '<p style="text-align:center; color:#aaa; padding: 20px;">Hiện tại không có đơn hàng nào chờ làm.</p>';
+        } else {
+            ordersListContainer.innerHTML = orders.map(o => {
+                let itemsHTML = '';
+                if (Array.isArray(o.items)) {
+                    itemsHTML = `<ul>${o.items.map(item => `<li>${item}</li>`).join('')}</ul>`;
+                } else {
+                    itemsHTML = `<p>Món: <strong>${o.items || ''}</strong></p>`;
+                }
 
-            // Xử lý nhãn chữ hiển thị trực quan cho cô chủ quán dễ đọc
-            let statusTextText = '';
-            let buttonHTML = '';
+                // CHUẨN HÓA CHỮ ĐỂ SO SÁNH CHÍNH XÁC (Chuyển hết về chữ thường và xóa khoảng trắng)
+                let currentStatus = String(o.status || '').toLowerCase().trim();
+                
+                let statusTextText = '';
+                let buttonHTML = '';
+                let borderLeftColor = '#e67e22';
 
-            if (o.status === 'pending') {
-                statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
-                buttonHTML = `<button class="btn-status" style="background: #e67e22" 
-                                onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
-            } else if (o.status === 'cooking') {
-                statusTextText = '<span style="color: #3498db; font-weight: bold;">Đang làm</span>';
-                buttonHTML = `<button class="btn-status" style="background: #3498db" 
-                                onclick="updateStatus('${o.id}', 'done')">✅ Xong</button>`;
-            } else if (o.status === 'done') {
-                statusTextText = '<span style="color: #27ae60; font-weight: bold;">Đã xong (Chờ lên món)</span>';
-                // Đơn đã xong thì không cần hiện nút nữa, chờ phục vụ bưng lên hoặc chủ quán bấm thu tiền là ẩn hẳn
-                buttonHTML = `<p style="text-align: center; color: #27ae60; margin: 10px 0 0 0; font-size: 13px; font-weight: bold;">✔️ Đã nấu xong</p>`;
-            }
+                // Hỗ trợ cả tiếng Anh lẫn tiếng Việt từ DB cũ
+                if (currentStatus === 'pending' || currentStatus === 'chờ làm') {
+                    statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
+                    buttonHTML = `<button class="btn-status" style="background: #e67e22" 
+                                    onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
+                    borderLeftColor = '#e67e22';
+                } 
+                else if (currentStatus === 'cooking' || currentStatus === 'đang làm') {
+                    statusTextText = '<span style="color: #3498db; font-weight: bold;">Đang làm</span>';
+                    buttonHTML = `<button class="btn-status" style="background: #3498db" 
+                                    onclick="updateStatus('${o.id}', 'done')">✅ Xong</button>`;
+                    borderLeftColor = '#3498db';
+                } 
+                else if (currentStatus === 'done' || currentStatus === 'xong') {
+                    statusTextText = '<span style="color: #27ae60; font-weight: bold;">Đã xong (Chờ lên món)</span>';
+                    buttonHTML = `<div style="text-align: center; color: #27ae60; background: #eafaf1; padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 13px; font-weight: bold;">✔️ Đang chờ phục vụ bưng món</div>`;
+                    borderLeftColor = '#27ae60';
+                } 
+                else {
+                    // Dự phòng nếu trạng thái bị ghi đè dữ liệu lạ bên ngoài
+                    statusTextText = `<span style="color: #7f8c8d; font-weight: bold;">${o.status}</span>`;
+                    buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Đặt lại về: Bắt đầu làm</button>`;
+                }
 
-            return `
-                <div class="order-card" style="border-left: 6px solid ${o.status === 'pending' ? '#e67e22' : o.status === 'cooking' ? '#3498db' : '#27ae60'}">
-                    <h3>📍 Bàn: ${o.table_number}</h3>
-                    ${itemsHTML}
-                    <p>Trạng thái: <strong>${statusTextText}</strong></p>
-                    ${buttonHTML}
-                </div>
-            `;
-        }).join('');
+                return `
+                    <div class="order-card" style="border-left: 6px solid ${borderLeftColor};">
+                        <h3>📍 Bàn: ${o.table_number}</h3>
+                        ${itemsHTML}
+                        <p>Trạng thái: <strong>${statusTextText}</strong></p>
+                        ${buttonHTML}
+                    </div>
+                `;
+            }).join('');
+        }
 
-        // Render bảng tính tiền bên phải
+        // Gom tổng số tiền cần thanh toán theo từng bàn riêng biệt
         const debts = (orders || []).reduce((acc, o) => {
             acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
             return acc;
         }, {});
 
-        document.getElementById('table-debts-list').innerHTML = Object.entries(debts).map(([table, total]) => `
-            <div class="table-debt-row">
-                <span>📍 Bàn ${table}: <strong>${total.toLocaleString()}đ</strong></span>
-                <button class="btn-pay-table" onclick="payTable('${table}', ${total})">💵 Thu tiền</button>
-            </div>
-        `).join('');
+        const debtsListContainer = document.getElementById('table-debts-list');
+        if (Object.keys(debts).length === 0) {
+            debtsListContainer.innerHTML = '<p style="text-align:center; color:#aaa;">Không có bàn nào cần tính tiền.</p>';
+        } else {
+            debtsListContainer.innerHTML = Object.entries(debts).map(([table, total]) => `
+                <div class="table-debt-row">
+                    <span>📍 Bàn ${table}: <strong>${total.toLocaleString()}đ</strong></span>
+                    <button class="btn-pay-table" onclick="payTable('${table}', ${total})">💵 Thu tiền</button>
+                </div>
+            `).join('');
+        }
 
-        // Lấy dữ liệu doanh thu
+        // Hiển thị tổng doanh thu ngày hôm nay
         const { data: rev } = await adminSupabase.from('revenue').select('total').eq('date', getToday()).maybeSingle();
         document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
     }
 
-    // Cập nhật trạng thái tuần tự theo DB: pending -> cooking -> done
+    // Đổi trạng thái tuần tự: Chờ làm -> Đang làm -> Xong
     async function updateStatus(id, nextStatus) {
         const { error } = await adminSupabase.from('orders').update({ status: nextStatus }).eq('id', parseInt(id));
         if (error) {
@@ -140,7 +162,7 @@
         }
     }
 
-    // Xử lý nút thu tiền chuyển tất cả đơn của bàn sang 'paid'
+    // Thu tiền toàn bộ hóa đơn của bàn đó
     async function payTable(table, amount) {
         if(!confirm("Thu tiền bàn " + table + "? Đơn sẽ được chuyển sang trạng thái Đã Thanh Toán.")) return;
         
@@ -156,14 +178,14 @@
         
         const { error: revError } = await adminSupabase.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
         if (revError) {
-            alert("Đơn đã ẩn thành công nhưng lỗi lưu doanh thu: " + revError.message);
+            alert("Đơn đã thanh toán thành công nhưng lỗi lưu doanh thu: " + revError.message);
         }
         
         loadData();
     }
 
-    // Lắng nghe Realtime tự động cập nhật
-    adminSupabase.channel('admin-legacy-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadData).subscribe();
+    // Luôn luôn lắng nghe Realtime đồng bộ lập tức với máy Phục vụ
+    adminSupabase.channel('admin-legacy-fixed-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadData).subscribe();
     window.onload = loadData;
 </script>
 </body>
