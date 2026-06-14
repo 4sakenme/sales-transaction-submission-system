@@ -147,7 +147,6 @@
         .btn-pay-now { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; }
         .btn-pay-now:disabled { background: #ccc; cursor: not-allowed; }
 
-        /* THEO DÕI ĐƠN */
         .waiter-order-card {
             background: #fffbf7;
             border: 1px solid #eddcd0;
@@ -161,31 +160,31 @@
         
         .btn-pay-fast {
             width: 100%;
-            background: #27ae60;
+            background: #e67e22;
             color: white;
             border: none;
-            padding: 8px;
+            padding: 10px;
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 8px;
-            font-size: 13px;
+            font-size: 14px;
         }
         .btn-delivered-fast {
             width: 100%;
-            background: #2980b9;
+            background: #27ae60;
             color: white;
             border: none;
-            padding: 8px;
+            padding: 10px;
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 8px;
-            font-size: 13px;
+            font-size: 14px;
         }
         .item-status-badge {
             font-size: 11px;
-            padding: 1px 5px;
+            padding: 2px 6px;
             border-radius: 4px;
             margin-left: 6px;
             color: white;
@@ -366,7 +365,6 @@
                 let itemsListHTML = '';
                 const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
                 
-                // Kiểm tra xem đơn này là Trả trước hay Trả sau
                 const isPaidAhead = (o.status === 'paid' || itemsStr.includes('CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT'));
 
                 let badgeColor = '#e67e22'; 
@@ -383,7 +381,7 @@
                 }
 
                 let actionButtonHTML = '';
-                // NẾU LÀ ĐƠN TRẢ TRƯỚC: Mất nút thu tiền, có nút Xong (Đã bưng)
+                // 1. ĐƠN TRẢ TRƯỚC: Hiện trạng thái, CHỈ HIỆN nút Xong (Đã bưng), KHÔNG CÓ nút Thu tiền
                 if (isPaidAhead) {
                     actionButtonHTML = `
                         <button class="btn-delivered-fast" onclick="markAsDelivered('${o.id}')">
@@ -391,11 +389,11 @@
                         </button>
                     `;
                 } 
-                // NẾU LÀ ĐƠN TRẢ SAU: Có nút Thu tiền tại bàn, không có nút Đã bưng
+                // 2. ĐƠN TRẢ SAU: CHỈ HIỆN nút Thu tiền tại bàn, KHÔNG CÓ nút Xong (Đã bưng)
                 else {
                     const hasUnfinished = (o.status !== 'waiting' && o.status !== 'đợi phục vụ');
                     actionButtonHTML = `
-                        <button class="btn-pay-fast" style="background: #e67e22;" onclick="payTableFast('${o.id}', '${o.table_number}', ${o.total}, ${hasUnfinished})">
+                        <button class="btn-pay-fast" onclick="payTableFast('${o.id}', '${o.table_number}', ${o.total}, ${hasUnfinished})">
                             💵 Thu tiền tại bàn
                         </button>
                     `;

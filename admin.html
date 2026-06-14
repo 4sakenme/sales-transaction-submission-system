@@ -21,7 +21,6 @@
         .table-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eddcd0; }
         .btn-pay-table { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         
-        /* Nhãn cảnh báo đơn hàng đã thanh toán trước */
         .paid-now-badge { background: #27ae60; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; display: inline-block; margin-left: 10px; }
 
         @media (max-width: 768px) { .admin-main-layout { flex-direction: column; } }
@@ -75,7 +74,6 @@
     async function loadData() {
         document.getElementById('display-date').innerText = getDisplayDate();
 
-        // Lấy tất cả các đơn chưa ẩn hoàn toàn khỏi hệ thống
         const { data: allOrders, error } = await adminSupabase
             .from('orders')
             .select('*')
@@ -86,7 +84,6 @@
 
         const ordersListContainer = document.getElementById('orders-list');
         
-        // --- 1. LOGIC 3 GIAI ĐOẠN CHO BẾP ---
         const bepOrders = (allOrders || []).filter(o => {
             const statusClean = String(o.status || '').toLowerCase().trim();
             return statusClean === 'pending' || statusClean === 'chờ làm' || statusClean === 'paid' || statusClean === 'cooking' || statusClean === 'đang làm' || statusClean === 'waiting' || statusClean === 'đợi phục vụ';
@@ -109,29 +106,28 @@
                 let borderLeftColor = '#e67e22';
                 let paidBadge = '';
 
-                // Kiểm tra gắn nhãn nếu chuỗi hoặc trạng thái có chứa thông tin trả trước
                 const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
                 if (currentStatus === 'paid' || itemsStr.includes('ĐÃ TRẢ TIỀN') || itemsStr.includes('CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT')) {
                     paidBadge = `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>`;
                 }
 
-                // Giai đoạn 1: Chờ làm (Áp dụng cho cả đơn mới tinh 'pending' hoặc đơn trả trước 'paid')
+                // GIAI ĐOẠN 1: Chờ làm (pending hoặc paid)
                 if (currentStatus === 'pending' || currentStatus === 'chờ làm' || currentStatus === 'paid') {
                     statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
                     buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu nấu</button>`;
                     borderLeftColor = '#e67e22';
                 } 
-                // Giai đoạn 2: Đang nấu
+                // GIAI ĐOẠN 2: Đang nấu -> Ấn xong chuyển sang Chờ phục vụ bưng
                 else if (currentStatus === 'cooking' || currentStatus === 'đang làm') {
                     statusTextText = '<span style="color: #3498db; font-weight: bold;">Đang nấu</span>';
-                    buttonHTML = `<button class="btn-status" style="background: #3498db" onclick="updateStatus('${o.id}', 'waiting')">🔔 Nấu xong - Đợi phục vụ bưng</button>`;
+                    buttonHTML = `<button class="btn-status" style="background: #27ae60" onclick="updateStatus('${o.id}', 'waiting')">✅ Nấu xong (Hoàn thành)</button>`;
                     borderLeftColor = '#3498db';
                 }
-                // Giai đoạn 3: Đợi phục vụ (Khóa nút bấm bên phía Bếp, tránh bấm nhầm làm mất đơn)
+                // GIAI ĐOẠN 3: Đợi phục vụ (Đơn ở lại đây, không bị mất đơn, khóa nút của Bếp)
                 else if (currentStatus === 'waiting' || currentStatus === 'đợi phục vụ') {
-                    statusTextText = '<span style="color: #7f8c8d; font-weight: bold;">Đang đợi phục vụ bưng món...</span>';
-                    buttonHTML = `<button class="btn-status" style="background: #95a5a6; cursor: not-allowed;" disabled>⏳ Chờ Phục vụ bấm xác nhận bưng</button>`;
-                    borderLeftColor = '#7f8c8d';
+                    statusTextText = '<span style="color: #27ae60; font-weight: bold;">Đang đợi phục vụ bưng món...</span>';
+                    buttonHTML = `<button class="btn-status" style="background: #95a5a6; cursor: not-allowed;" disabled>⏳ Đang chờ nhân viên phục vụ xử lý đơn</button>`;
+                    borderLeftColor = '#27ae60';
                 }
 
                 return `
@@ -145,10 +141,9 @@
             }).join('');
         }
 
-        // --- 2. LOGIC BẢNG TÍNH TIỀN CHO THU NGÂN ---
+        // BẢNG TÍNH TIỀN CHO THU NGÂN (ĐƠN TRẢ SAU)
         const debts = (allOrders || []).filter(o => {
             const st = String(o.status).toLowerCase().trim();
-            // Chỉ tính những đơn chưa thanh toán trước, không tính đơn 'paid', 'waiting' của trả trước, chỉ gom đơn trả sau
             const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
             return st !== 'paid' && !itemsStr.includes('CHUYỂN KHOẢN') && !itemsStr.includes('TIỀN MẶT');
         }).reduce((acc, o) => {
