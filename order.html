@@ -142,8 +142,12 @@
         .cart-note-input:focus { border-color: #e7a460; background: #fff; }
 
         .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        /* ĐỒNG BỘ 2 NÚT BẤM GỬI ĐƠN / THÀNH TOÁN TRƯỚC */
         .btn-submit { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-pay-now { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; }
+        .btn-pay-now:disabled { background: #ccc; cursor: not-allowed; }
 
         /* THEO DÕI ĐƠN */
         .waiter-order-card {
@@ -169,7 +173,6 @@
             margin-top: 8px;
             font-size: 13px;
         }
-        /* Style nhãn trạng thái món nhỏ gọn cho phục vụ xem */
         .item-status-badge {
             font-size: 11px;
             padding: 1px 5px;
@@ -179,6 +182,40 @@
             font-weight: bold;
             display: inline-block;
         }
+
+        /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT */
+        .combo-modal {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.5); 
+            align-items: center; justify-content: center;
+        }
+        .combo-modal-content {
+            background-color: white; 
+            padding: 25px; 
+            border-radius: 16px; 
+            width: 85%; max-width: 340px; 
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            animation: popupScale 0.25s ease-out;
+        }
+        @keyframes popupScale {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .combo-modal h3 { margin-top: 0; color: #4e3629; font-size: 18px; }
+        .combo-btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .btn-taste {
+            padding: 12px; border: 2px solid #eddcd0; border-radius: 10px;
+            font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; background: #fff8f2; color: #4e3629;
+        }
+        .btn-taste:hover { border-color: #e7a460; background: #fff; }
+        .btn-taste.sauce { border-color: #e67e22; color: #e67e22; background: #fffcf9; }
+        .btn-taste.sauce:hover { background: #e67e22; color: white; }
+        .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
 
         @media (max-width: 768px) {
             .waiter-container { flex-direction: column; padding: 10px; }
@@ -225,7 +262,8 @@
                 <div id="cart-items"></div>
                 <div class="cart-total">
                     <h3 style="margin: 10px 0 5px 0;">Tổng: <span id="cart-total-price" class="money">0</span> đ</h3>
-                    <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp</button>
+                    <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp (Trả sau)</button>
+                    <button class="btn-pay-now" onclick="submitAndPayImmediately()">💵 Thu tiền luôn (Trả trước)</button>
                 </div>
             </section>
 
@@ -238,6 +276,17 @@
         </div>
     </main>
 
+    <div id="combo-taste-modal" class="combo-modal">
+        <div class="combo-modal-content">
+            <h3 id="modal-combo-title">Chọn cách chế biến Combo</h3>
+            <div class="combo-btn-group">
+                <button class="btn-taste" onclick="selectTasteForCombo('Thường')">🍟 Combo vị Thường</button>
+                <button class="btn-taste sauce" onclick="selectTasteForCombo('Chiên mắm')">🍯 Combo Chiên Mắm (+0đ)</button>
+            </div>
+            <button class="btn-close-modal" onclick="closeComboModal()">Hủy bỏ</button>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
@@ -249,6 +298,7 @@
         let menu = [];
         let cart = {};
         let currentCategory = 'ALL';
+        let temporaryComboId = null;
 
         function getToday() {
             const d = new Date();
@@ -265,8 +315,8 @@
             loadActiveOrders();
         }
 
-        // Tải danh sách đơn và hiển thị kèm nhãn trạng thái (Chờ làm / Đang nấu / Đã xong)
         async function loadActiveOrders() {
+            // Chỉ lấy các đơn hàng chưa thanh toán (status khác paid) lên màn hình theo dõi của phục vụ
             const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid');
             if (error) { console.error(error); return; }
 
@@ -276,7 +326,6 @@
                 return;
             }
 
-            // Gộp đơn theo số bàn
             const tableGroups = {};
             orders.forEach(o => {
                 if (!tableGroups[o.table_number]) {
@@ -284,13 +333,11 @@
                 }
                 tableGroups[o.table_number].total += (o.total || 0);
                 
-                // Kiểm tra xem đơn này bếp đã làm xong chưa
                 if (o.status !== 'done') {
                     tableGroups[o.table_number].hasUnfinished = true;
                 }
 
-                // Thiết lập màu sắc nhãn trạng thái tương ứng
-                let badgeColor = '#e67e22'; // Màu cam - pending
+                let badgeColor = '#e67e22'; 
                 let badgeText = 'Chờ làm';
                 if (o.status === 'cooking') { badgeColor = '#e7a460'; badgeText = 'Đang nấu'; }
                 if (o.status === 'done') { badgeColor = '#27ae60'; badgeText = 'Đã xong'; }
@@ -344,55 +391,89 @@
             }
 
             grid.innerHTML = filteredItems.map(item => `
-                <div class="menu-item" onclick="addToCart(${item.id})">
+                <div class="menu-item" onclick="handleItemSelection(${item.id})">
                     <h4>${item.name}</h4>
                     <p class="money">${Number(item.price || 0).toLocaleString()} đ</p>
                 </div>
             `).join('');
         }
 
-        function addToCart(id) {
+        function handleItemSelection(id) {
             const item = menu.find(m => m.id === id);
             if (!item) return;
 
-            if (!cart[id]) {
-                cart[id] = { id: id, name: item.name, price: Number(item.price || 0), quantity: 1, note: '' };
+            const nameClean = item.name.toUpperCase();
+            if (nameClean.includes('COMBO 1') || nameClean.includes('COMBO 2') || nameClean.includes('COMBO 3') || nameClean.includes('COMBO 4') || nameClean.includes('COMBO 5')) {
+                temporaryComboId = id;
+                document.getElementById('modal-combo-title').innerText = `💥 Chế biến: ${item.name}`;
+                document.getElementById('combo-taste-modal').style.display = 'flex';
             } else {
-                cart[id].quantity += 1;
+                addToCart(id, '');
+            }
+        }
+
+        function selectTasteForCombo(taste) {
+            if (temporaryComboId !== null) {
+                addToCart(temporaryComboId, taste);
+            }
+            closeComboModal();
+        }
+
+        function closeComboModal() {
+            document.getElementById('combo-taste-modal').style.display = 'none';
+            temporaryComboId = null;
+        }
+
+        function addToCart(id, tasteNote) {
+            const item = menu.find(m => m.id === id);
+            if (!item) return;
+
+            const cartKey = tasteNote ? `${id}_${tasteNote}` : `${id}`;
+
+            if (!cart[cartKey]) {
+                cart[cartKey] = { 
+                    id: id, 
+                    name: item.name, 
+                    price: Number(item.price || 0), 
+                    quantity: 1, 
+                    note: tasteNote ? tasteNote : '' 
+                };
+            } else {
+                cart[cartKey].quantity += 1;
             }
             renderCart();
         }
 
-        function changeQty(id, delta) {
-            if (!cart[id]) return;
-            cart[id].quantity += delta;
-            if (cart[id].quantity <= 0) delete cart[id];
+        function changeQty(key, delta) {
+            if (!cart[key]) return;
+            cart[key].quantity += delta;
+            if (cart[key].quantity <= 0) delete cart[key];
             renderCart();
         }
 
-        function updateNote(id, text) {
-            if (cart[id]) cart[id].note = text.trim();
+        function updateNote(key, text) {
+            if (cart[key]) cart[key].note = text.trim();
         }
 
         function renderCart() {
             const container = document.getElementById('cart-items');
             let total = 0;
             
-            container.innerHTML = Object.values(cart).map(item => {
+            container.innerHTML = Object.entries(cart).map(([key, item]) => {
                 total += item.price * item.quantity;
                 return `
                     <div class="cart-row">
                         <div class="cart-row-top">
                             <div style="flex:1; font-size:13px;"><strong>${item.name}</strong></div>
                             <div style="margin-right:10px;">
-                                <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
+                                <button class="btn-qty" onclick="changeQty('${key}', -1)">-</button>
                                 <span style="display:inline-block; width:15px; text-align:center; font-size:13px;">${item.quantity}</span>
-                                <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
+                                <button class="btn-qty" onclick="changeQty('${key}', 1)">+</button>
                             </div>
                             <div class="money" style="font-size:13px;">${(item.price * item.quantity).toLocaleString()} đ</div>
                         </div>
-                        <input type="text" class="cart-note-input" placeholder="💡 Ghi chú (ít đá, ngọt vừa...)" 
-                               value="${item.note || ''}" oninput="updateNote(${item.id}, this.value)">
+                        <input type="text" class="cart-note-input" placeholder="💡 Ghi chú thêm (ít đá, cay...)" 
+                               value="${item.note || ''}" oninput="updateNote('${key}', this.value)">
                     </div>
                 `;
             }).join('');
@@ -409,6 +490,7 @@
 
         function filterMenu() { renderMenu(); }
 
+        // 1. GỬI ĐƠN TRẢ SAU (Món ăn giữ trạng thái pending)
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
@@ -431,10 +513,7 @@
 
                 if (!error) {
                     alert("🚀 Đã gửi đơn xuống Bếp thành công!");
-                    cart = {};
-                    document.getElementById('table-number').value = '';
-                    renderCart();
-                    loadActiveOrders();
+                    clearCart();
                 } else {
                     alert("Lỗi database: " + error.message);
                 }
@@ -446,27 +525,82 @@
         }
 
         // ========================================================
-        // 💵 HÀM THU TIỀN NHANH CÓ KIỂM TRA TRẠNG THÁI BẾP
+        // 💵 2. XỬ LÝ KHÁCH YÊU CẦU THANH TOÁN LUÔN (TRẢ TRƯỚC)
         // ========================================================
+        async function submitAndPayImmediately() {
+            const table = document.getElementById('table-number').value.trim();
+            if (!table) return alert("Vui lòng nhập số bàn!");
+            if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
+
+            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
+            
+            if (!confirm(`Xác nhận THU TIỀN TRƯỚC bàn ${table}\nTổng số tiền: ${total.toLocaleString()}đ`)) return;
+
+            const btnPayNow = document.querySelector('.btn-pay-now');
+            btnPayNow.disabled = true;
+
+            // Thêm chữ [ĐÃ TRẢ TIỀN] vào đầu tên món ăn để Bếp nhìn thấy không thu tiền lại nữa
+            const items = Object.values(cart).map(i => {
+                const noteText = i.note ? ` (${i.note})` : '';
+                return `⚠️[ĐÃ TRẢ TIỀN] ${i.name}${noteText} (x${i.quantity})`;
+            });
+
+            try {
+                // 2.1 Đẩy đơn lên hệ thống dạng 'paid' để ẩn khỏi danh sách cần thu tiền sau này
+                const { error: orderError } = await supabaseClient.from('orders').insert([
+                    { table_number: table, items: items, total: total, status: 'paid' }
+                ]);
+
+                if (orderError) {
+                    alert("Lỗi đẩy đơn trả trước: " + orderError.message);
+                    btnPayNow.disabled = false;
+                    return;
+                }
+
+                // 2.2 Cộng trực tiếp số tiền này vào doanh thu tổng của ngày hôm nay luôn
+                const todayDate = getToday();
+                const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
+                const newTotal = (rev?.total || 0) + total;
+
+                const { error: revError } = await supabaseClient.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
+                
+                if (revError) {
+                    alert("Đơn hàng đã gửi nhưng lỗi cộng dồn doanh thu: " + revError.message);
+                } else {
+                    alert("✅ Đơn hàng Trả Trước thành công! Tiền đã cộng trực tiếp vào doanh thu hôm nay.");
+                }
+
+                clearCart();
+
+            } catch (error) {
+                alert("Lỗi kết nối hệ thống!");
+            } finally {
+                btnPayNow.disabled = false;
+            }
+        }
+
+        function clearCart() {
+            cart = {};
+            document.getElementById('table-number').value = '';
+            renderCart();
+            loadActiveOrders();
+        }
+
         async function payTableFast(table, amount, hasUnfinished) {
-            // Nếu có đơn chưa nấu xong, hiện cảnh báo nhắc nhở phục vụ kiểm tra lại với bếp trước
             if (hasUnfinished) {
                 if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG!\nBạn có chắc chắn muốn tính tiền sớm và xóa đơn của bàn này không?`)) {
-                    return; // Người dùng ấn Hủy -> Dừng lệnh xóa đơn
+                    return;
                 }
             } else {
-                // Nếu bếp đã làm xong hết (màu xanh lá), chỉ cần hỏi xác nhận thu tiền thông thường
                 if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ?`)) return;
             }
 
-            // Chuyển trạng thái đơn sang 'paid'
             const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
                 return;
             }
 
-            // Cộng dồn vào doanh thu ngày
             const todayDate = getToday();
             const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
             const newTotal = (rev?.total || 0) + amount;
@@ -481,7 +615,6 @@
             loadActiveOrders();
         }
 
-        // Realtime đồng bộ cập nhật danh sách
         supabaseClient.channel('waiter-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders).subscribe();
 
         window.onload = loadInitialData;
