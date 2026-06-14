@@ -217,10 +217,10 @@
         .btn-taste.sauce:hover { background: #e67e22; color: white; }
         .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
 
-        /* CSS Cho hình ảnh mã QR ngân hàng có sẵn */
+        /* 🔥 ĐÃ SỬA: Cho ảnh QR bự lên kích thước 320px */
         .qr-image {
-            width: 240px;
-            height: 240px;
+            width: 320px;
+            height: 320px;
             margin: 15px auto;
             display: block;
             border: 3px solid #f5ece5;
@@ -229,6 +229,8 @@
             background: #fff;
         }
         .btn-confirm-pay { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 10px; }
+        /* Style cho nút tiền mặt mới */
+        .btn-cash-pay { background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 8px; }
 
         @media (max-width: 768px) {
             .waiter-container { flex-direction: column; padding: 10px; }
@@ -301,13 +303,16 @@
     </div>
 
     <div id="qr-pay-modal" class="combo-modal">
-        <div class="combo-modal-content" style="max-width: 380px;">
-            <h3 style="color: #27ae60; margin-bottom: 5px;">Quét QR Của Quán</h3>
+        <div class="combo-modal-content" style="max-width: 400px;">
+            <h3 style="color: #27ae60; margin-bottom: 5px;">Thu Tiền Trả Trước</h3>
             <p id="qr-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
             
             <img id="qr-pay-img" src="2aOboQdQDRATgIqvbsDnMV5cBZLITs3W1FwJspiC.jpg" alt="Mã QR Quán" class="qr-image">
             
-            <button class="btn-confirm-pay" onclick="submitAndPayImmediately()">✅ Khách đã quét - Xác nhận hoàn tất</button>
+            <button class="btn-confirm-pay" onclick="submitAndPayImmediately('CHUYỂN KHOẢN')">✅ Khách đã quét - Xác nhận CK</button>
+            
+            <button class="btn-cash-pay" onclick="submitAndPayImmediately('TIỀN MẶT')">💵 Khách trả TIỀN MẶT - Xác nhận</button>
+            
             <button class="btn-close-modal" onclick="closeQrModal()">Đóng cửa sổ</button>
         </div>
     </div>
@@ -567,18 +572,23 @@
             document.getElementById('qr-pay-modal').style.display = 'none';
         }
 
-        // 💵 3. KHÁCH THANH TOÁN XONG -> BẤM XÁC NHẬN ĐỂ ĐẨY ĐƠN LÊN DATABASE
-        async function submitAndPayImmediately() {
+        // 💵 3. ĐÃ SỬA: KHÁCH THANH TOÁN XONG -> PHÂN BIỆT CHUYỂN KHOẢN VÀ TIỀN MẶT
+        async function submitAndPayImmediately(paymentMethod) {
             const table = document.getElementById('table-number').value.trim();
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
             
             const btnPayNow = document.querySelector('.btn-pay-now');
             btnPayNow.disabled = true;
 
-            // Thêm chữ [ĐÃ TRẢ TIỀN] vào đầu tên món ăn để Bếp nhìn thấy không thu tiền lại nữa
+            // Thiết lập nhãn phân biệt hình thức thanh toán cho Bếp dễ kiểm soát đơn
+            let methodLabel = "⚠️[ĐÃ CHUYỂN KHOẢN]";
+            if (paymentMethod === "TIỀN MẶT") {
+                methodLabel = "⚠️[TIỀN MẶT]";
+            }
+
             const items = Object.values(cart).map(i => {
                 const noteText = i.note ? ` (${i.note})` : '';
-                return `⚠️[ĐÃ TRẢ TIỀN] ${i.name}${noteText} (x${i.quantity})`;
+                return `${methodLabel} ${i.name}${noteText} (x${i.quantity})`;
             });
 
             try {
@@ -603,7 +613,7 @@
                 if (revError) {
                     alert("Đơn hàng đã gửi nhưng lỗi cộng dồn doanh thu: " + revError.message);
                 } else {
-                    alert("✅ Đơn hàng Trả Trước thành công! Tiền đã cộng trực tiếp vào doanh thu hôm nay.");
+                    alert(`✅ Đơn hàng Trả Trước [${paymentMethod}] thành công! Doanh thu đã cập nhật.`);
                 }
 
                 closeQrModal();
