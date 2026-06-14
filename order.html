@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📱 Phục vụ - Gọi món nhanh</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* 🎨 HỆ THỐNG CSS LAYOUT CHUYÊN NGHIỆP */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #fcf8f5;
@@ -141,47 +143,39 @@
 
         .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         
+        /* ĐỒNG BỘ 2 NÚT BẤM GỬI ĐƠN / THÀNH TOÁN TRƯỚC */
         .btn-submit { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
         .btn-pay-now { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; }
         .btn-pay-now:disabled { background: #ccc; cursor: not-allowed; }
 
+        /* THEO DÕI ĐƠN */
         .waiter-order-card {
             background: #fffbf7;
             border: 1px solid #eddcd0;
-            border-left: 5px solid #e67e22;
+            border-left: 5px solid #27ae60;
             padding: 12px;
             border-radius: 10px;
             margin-bottom: 12px;
-            transition: 0.3s;
         }
-        
-        @keyframes blink-waiting {
-            0% { background-color: #fffbf7; box-shadow: 0 0 5px rgba(39, 174, 96, 0.2); }
-            50% { background-color: #ebf7ee; box-shadow: 0 0 15px rgba(39, 174, 96, 0.6); border-color: #27ae60; }
-            100% { background-color: #fffbf7; box-shadow: 0 0 5px rgba(39, 174, 96, 0.2); }
-        }
-
         .waiter-order-card h4 { margin: 0 0 6px 0; color: #333; display: flex; justify-content: space-between; }
         .waiter-order-card ul { margin: 5px 0; padding-left: 18px; font-size: 13px; color: #555; }
         
-        .btn-pay-fast, .btn-delivered-fast {
+        .btn-pay-fast {
             width: 100%;
-            background: #e67e22;
+            background: #27ae60;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 8px;
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 8px;
-            font-size: 14px;
+            font-size: 13px;
         }
-        .btn-delivered-fast { background: #27ae60; }
-        
         .item-status-badge {
             font-size: 11px;
-            padding: 2px 6px;
+            padding: 1px 5px;
             border-radius: 4px;
             margin-left: 6px;
             color: white;
@@ -189,6 +183,7 @@
             display: inline-block;
         }
 
+        /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT & POPUP QR */
         .combo-modal {
             display: none; 
             position: fixed; 
@@ -222,6 +217,7 @@
         .btn-taste.sauce:hover { background: #e67e22; color: white; }
         .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
 
+        /* 🔥 ĐÃ SỬA: Ảnh QR siêu bự, tự co giãn mượt mà trên điện thoại nhỏ */
         .qr-image {
             width: 100%;
             max-width: 520px;
@@ -251,7 +247,7 @@
     <main class="waiter-container">
         <section class="menu-section">
             <h2>Danh sách món</h2>
-            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh...">
+            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
             
             <div class="category-tabs">
                 <button class="tab-btn active" onclick="switchCategory('ALL', event)">✨ Tất cả</button>
@@ -322,8 +318,7 @@
 
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        // ĐÃ SỬA: Token chuẩn không chứa khoảng trắng hay ký tự sai
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': 'beut123' } }
@@ -347,15 +342,10 @@
             } catch (e) { console.error(e); }
 
             loadActiveOrders();
-            
-            const searchBar = document.getElementById('search-bar');
-            if (searchBar) {
-                searchBar.addEventListener('input', renderMenu);
-            }
         }
 
         async function loadActiveOrders() {
-            const { data: orders, error } = await supabaseClient.from('orders').select('*').not('status', 'eq', 'bep_done');
+            const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid');
             if (error) { console.error(error); return; }
 
             const listContainer = document.getElementById('waiter-orders-list');
@@ -364,79 +354,47 @@
                 return;
             }
 
-            listContainer.innerHTML = orders.map(o => {
-                let itemsListHTML = '';
-                const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-                const isPaidAhead = (o.status === 'paid' || itemsStr.includes('CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT'));
+            const tableGroups = {};
+            orders.forEach(o => {
+                if (!tableGroups[o.table_number]) {
+                    tableGroups[o.table_number] = { total: 0, itemsWithStatus: [], hasUnfinished: false };
+                }
+                tableGroups[o.table_number].total += (o.total || 0);
+                
+                if (o.status !== 'done') {
+                    tableGroups[o.table_number].hasUnfinished = true;
+                }
 
                 let badgeColor = '#e67e22'; 
                 let badgeText = 'Chờ làm';
-                let currentStatus = String(o.status || '').toLowerCase().trim();
-                
-                if (currentStatus === 'cooking' || currentStatus === 'đang làm') { 
-                    badgeColor = '#e7a460'; 
-                    badgeText = 'Đang nấu'; 
-                }
-                if (currentStatus === 'waiting' || currentStatus === 'đợi phục vụ') { 
-                    badgeColor = '#27ae60'; 
-                    badgeText = '🔔 ĐÃ NẤU XONG!'; 
-                }
+                if (o.status === 'cooking') { badgeColor = '#e7a460'; badgeText = 'Đang nấu'; }
+                if (o.status === 'done') { badgeColor = '#27ae60'; badgeText = 'Đã xong'; }
 
                 const statusBadge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
 
                 if (Array.isArray(o.items)) {
-                    itemsListHTML = o.items.map(item => `<li>${item} ${statusBadge}</li>`).join('');
+                    o.items.forEach(item => {
+                        tableGroups[o.table_number].itemsWithStatus.push(`<li>${item} ${statusBadge}</li>`);
+                    });
                 } else if (o.items) {
-                    itemsListHTML = `<li>${o.items} ${statusBadge}</li>`;
+                    tableGroups[o.table_number].itemsWithStatus.push(`<li>${o.items} ${statusBadge}</li>`);
                 }
+            });
 
-                let actionButtonHTML = '';
-                let cardBlinkStyle = ''; 
-
-                if (currentStatus === 'waiting' || currentStatus === 'đợi phục vụ') {
-                    cardBlinkStyle = 'animation: blink-waiting 1.5s infinite; border-left: 5px solid #27ae60;';
-                } else {
-                    cardBlinkStyle = `border-left: 5px solid ${isPaidAhead ? '#27ae60' : '#e67e22'};`;
-                }
-
-                if (isPaidAhead) {
-                    actionButtonHTML = `
-                        <button class="btn-delivered-fast" onclick="markAsDelivered('${o.id}')">
-                            🏃‍♂️ Đã bưng món (Hoàn tất)
-                        </button>
-                    `;
-                } 
-                else {
-                    let deliverButtonHTML = '';
-                    if (currentStatus === 'waiting' || currentStatus === 'đợi phục vụ') {
-                        deliverButtonHTML = `
-                            <button class="btn-delivered-fast" style="margin-bottom: 5px;" onclick="markAsDelivered('${o.id}')">
-                                🏃‍♂️ Đã bưng lên bàn (Xong món)
-                            </button>
-                        `;
-                    }
-                    
-                    const hasUnfinished = (currentStatus !== 'waiting' && currentStatus !== 'đợi phục vụ');
-                    actionButtonHTML = `
-                        ${deliverButtonHTML}
-                        <button class="btn-pay-fast" onclick="payTableFast('${o.id}', '${o.table_number}', ${o.total}, ${hasUnfinished})">
-                            💵 Thu tiền tại bàn
-                        </button>
-                    `;
-                }
-
+            listContainer.innerHTML = Object.keys(tableGroups).map(table => {
+                const group = tableGroups[table];
                 return `
-                    <div class="waiter-order-card" style="${cardBlinkStyle}">
+                    <div class="waiter-order-card">
                         <h4>
-                            <span>📍 Bàn: ${o.table_number} ${isPaidAhead ? '<b style="color:#27ae60; font-size:11px;">[TRẢ TRƯỚC]</b>' : ''}</span>
-                            <span class="money">${o.total.toLocaleString()}đ</span>
+                            <span>📍 Bàn: ${table}</span>
+                            <span class="money">${group.total.toLocaleString()}đ</span>
                         </h4>
                         <ul style="list-style-type: square; padding-left: 20px;">
-                            ${itemsListHTML}
+                            ${group.itemsWithStatus.join('')}
                         </ul>
-                        <div style="margin-top: 10px;">
-                            ${actionButtonHTML}
-                        </div>
+                        <button class="btn-pay-fast" onclick="payTableFast('${table}', ${group.total}, ${group.hasUnfinished})">
+                            💵 Thu tiền tại bàn
+                        </button>
                     </div>
                 `;
             }).join('');
@@ -444,8 +402,7 @@
 
         function renderMenu() {
             const grid = document.getElementById('menu-grid');
-            const searchBar = document.getElementById('search-bar');
-            const searchText = searchBar ? searchBar.value.toLowerCase().trim() : '';
+            const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
 
             const filteredItems = menu.filter(item => {
                 const itemCat = (item.category || '').toString().toUpperCase().trim();
@@ -559,6 +516,8 @@
             renderMenu();
         }
 
+        function filterMenu() { renderMenu(); }
+
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
@@ -614,7 +573,7 @@
             const btnPayNow = document.querySelector('.btn-pay-now');
             btnPayNow.disabled = true;
 
-            let methodLabel = "⚠️[CHUYỂN KHOẢN]";
+            let methodLabel = "⚠️[ĐÃ CHUYỂN KHOẢN]";
             if (paymentMethod === "TIỀN MẶT") {
                 methodLabel = "⚠️[TIỀN MẶT]";
             }
@@ -664,30 +623,16 @@
             loadActiveOrders();
         }
 
-        async function markAsDelivered(orderId) {
-            if (!confirm("Xác nhận đã bưng món hoàn tất lên bàn cho khách? Đơn hàng này sẽ đóng lại.")) return;
-            
-            const { error } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('id', parseInt(orderId));
-            if (error) {
-                alert("Lỗi cập nhật trạng thái bưng món: " + error.message);
-            } else {
-                loadActiveOrders();
-            }
-        }
-
-        async function payTableFast(orderId, table, amount, hasUnfinished) {
+        async function payTableFast(table, amount, hasUnfinished) {
             if (hasUnfinished) {
-                if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG hoàn toàn!\nBạn có chắc chắn muốn tính tiền sớm và đóng đơn của bàn này không?`)) {
+                if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG!\nBạn có chắc chắn muốn tính tiền sớm và xóa đơn của bàn này không?`)) {
                     return;
                 }
             } else {
-                if (!confirm(`Xác nhận thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ? Đơn hàng sẽ đóng.`)) return;
+                if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ?`)) return;
             }
 
-            const { error: orderError } = await supabaseClient.from('orders')
-                .update({ status: 'bep_done' })
-                .eq('id', parseInt(orderId)); 
-
+            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
                 return;
@@ -699,9 +644,9 @@
 
             const { error: revError } = await supabaseClient.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
             if (revError) {
-                alert("Đơn hàng đã đóng nhưng lỗi lưu doanh thu: " + revError.message);
+                alert("Đơn hàng đã ẩn nhưng lỗi lưu doanh thu: " + revError.message);
             } else {
-                alert("✅ Thanh toán thành công! Đơn hàng trả sau đã hoàn tất.");
+                alert("✅ Thanh toán hoàn tất! Tiền đã cộng vào doanh thu hôm nay.");
             }
 
             loadActiveOrders();
