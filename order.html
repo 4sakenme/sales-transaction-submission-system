@@ -262,7 +262,7 @@
     <main class="waiter-container">
         <section class="menu-section">
             <h2>Danh sách món</h2>
-            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh...">
+            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
             
             <div class="category-tabs">
                 <button class="tab-btn active" onclick="switchCategory('ALL', event)">✨ Tất cả</button>
@@ -333,7 +333,7 @@
 
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3IDEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': 'beut123' } }
@@ -357,12 +357,6 @@
             } catch (e) { console.error(e); }
 
             loadActiveOrders();
-            
-            // ĐÃ FIX: Lắng nghe sự kiện input trực tiếp từ Javascript an toàn hơn
-            const searchBar = document.getElementById('search-bar');
-            if (searchBar) {
-                searchBar.addEventListener('input', renderMenu);
-            }
         }
 
         async function loadActiveOrders() {
@@ -456,8 +450,7 @@
 
         function renderMenu() {
             const grid = document.getElementById('menu-grid');
-            const searchBar = document.getElementById('search-bar');
-            const searchText = searchBar ? searchBar.value.toLowerCase().trim() : '';
+            const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
 
             const filteredItems = menu.filter(item => {
                 const itemCat = (item.category || '').toString().toUpperCase().trim();
@@ -570,6 +563,8 @@
             if(event && event.target) event.target.classList.add('active');
             renderMenu();
         }
+
+        function filterMenu() { renderMenu(); }
 
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
@@ -687,6 +682,7 @@
             }
         }
 
+        // ĐÃ FIX: Chuyển sang update theo orderId thay vì table_number để tránh ẩn nhầm các đơn trùng số bàn khác
         async function payTableFast(orderId, table, amount, hasUnfinished) {
             if (hasUnfinished) {
                 if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG hoàn toàn!\nBạn có chắc chắn muốn tính tiền sớm và đóng đơn của bàn này không?`)) {
@@ -698,7 +694,7 @@
 
             const { error: orderError } = await supabaseClient.from('orders')
                 .update({ status: 'bep_done' })
-                .eq('id', parseInt(orderId)); 
+                .eq('id', parseInt(orderId)); // Nhắm chính xác ID đơn hàng cần đóng
 
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
