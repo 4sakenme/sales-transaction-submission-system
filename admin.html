@@ -29,7 +29,7 @@
         .btn-to-cooking { background: #e67e22; }
         .btn-to-waiting { background: #27ae60; }
         
-        .badge-method { font-size: 11px; padding: 2px 5px; border-radius: 3px; font-weight: bold; color: white; margin-right: 4px; display: inline-block; }
+        .badge-method { font-size: 11px; padding: 1px 4px; border-radius: 3px; font-weight: bold; color: white; margin-right: 4px; }
     </style>
 </head>
 <body>
@@ -64,7 +64,7 @@
 
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co";
-        // Đồng bộ chuẩn xác Key của file order.html đang chạy tốt
+        // Đồng bộ Key sạch từ file order.html của bạn
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
 
         const adminSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -79,16 +79,16 @@
         }
 
         async function loadData() {
-            // 1. Tải Doanh Thu Hôm Nay
+            // Tải doanh thu
             try {
                 const today = getToday();
                 const { data: revData } = await adminSupabase.from('revenue').select('total').eq('date', today).maybeSingle();
                 document.getElementById('today-revenue').innerText = (revData?.total || 0).toLocaleString();
-            } catch (e) { console.error("Lỗi load doanh thu:", e); }
+            } catch (e) { console.error(e); }
 
-            // 2. Tải các đơn chưa đóng (status != 'paid') giống order.html
+            // Tải đơn hàng chưa thanh toán (khớp logic .neq('status', 'paid') bên order)
             const { data: orders, error } = await adminSupabase.from('orders').select('*').neq('status', 'paid');
-            if (error) { console.error("Lỗi tải đơn hàng công việc:", error); return; }
+            if (error) { console.error(error); return; }
 
             const pendingBox = document.getElementById('list-pending');
             const cookingBox = document.getElementById('list-cooking');
@@ -107,10 +107,7 @@
 
                 const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
                 const isPaidAhead = (itemsStr.includes('CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT'));
-                
-                const paidBadge = isPaidAhead ? 
-                    `<span class="badge-method" style="background:#27ae60">ĐÃ TRẢ TRƯỚC</span>` : 
-                    `<span class="badge-method" style="background:#e67e22">TRẢ SAU</span>`;
+                const paidBadge = isPaidAhead ? `<span class="badge-method" style="background:#27ae60">ĐÃ TRẢ TRƯỚC</span>` : `<span class="badge-method" style="background:#e67e22">TRẢ SAU</span>`;
 
                 const cardHTML = `
                     <div class="order-card">
@@ -125,8 +122,8 @@
                             `<button class="btn-action btn-to-cooking" onclick="updateStatus('${o.id}', 'cooking')">🧑‍🍳 Nhận nấu đơn này</button>` :
                             o.status === 'cooking' ? 
                             `<button class="btn-action btn-to-waiting" onclick="updateStatus('${o.id}', 'done')">🔔 Báo xong - Gửi Phục Vụ</button>` : 
-                            `<p style="margin:5px 0 0 0; font-size:12px; color:#27ae60; font-weight:bold; text-align:center;">⌛ Đang đợi phục vụ bưng lên...</p>
-                             <button class="btn-action" style="background:#888;" onclick="payTableDirectly('${o.table_number}', ${o.total})">💵 Thu tiền & Đóng đơn tại quầy</button>`
+                            `<p style="margin:5px 0 0 0; font-size:12px; color:#27ae60; font-weight:bold; text-align:center;">⌛ Đang chờ phục vụ bưng lên...</p>
+                             <button class="btn-action" style="background:#888;" onclick="payTable('${o.table_number}', ${o.total})">💵 Thu tiền & Đóng đơn</button>`
                         }
                     </div>
                 `;
@@ -159,13 +156,12 @@
             }
         }
 
-        async function payTableDirectly(table, amount) {
-            if(!confirm(`Thu tiền trực tiếp bàn ${table} số tiền ${amount.toLocaleString()}đ? Đơn này sẽ hoàn tất và cộng dồn vào doanh thu.`)) return;
+        async function payTable(table, amount) {
+            if(!confirm("Thu tiền bàn " + table + "? Đơn sẽ được lưu doanh thu và hoàn tất.")) return;
             
-            // Đổi trạng thái thành 'paid' giống logic bấm nút tại bàn của order.html để đồng bộ ẩn đơn đi
             const { error: orderError } = await adminSupabase.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
             if (orderError) {
-                alert("Lỗi cập nhật đơn hàng: " + orderError.message);
+                alert("Lỗi cập nhật đơn: " + orderError.message);
                 return;
             }
             
@@ -176,21 +172,16 @@
             const { error: revError } = await adminSupabase.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
             if (revError) {
                 alert("Lỗi lưu doanh thu: " + revError.message);
-            } else {
-                alert("✅ Đã thu tiền thành công!");
             }
             
             loadData();
         }
 
-        // Lắng nghe Realtime thay đổi từ Database để tự động reload và phát âm thanh
-        adminSupabase.channel('admin-realtime-sync')
+        adminSupabase.channel('admin-legacy-fixed-channel')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
                 if (payload.eventType === 'INSERT') {
                     if (notifySound) {
-                        notifySound.play().catch(e => {
-                            console.log("Trình duyệt chặn phát âm thanh tự động ban đầu: " + e.message);
-                        });
+                        notifySound.play().catch(e => console.log("Autoplay block: " + e.message));
                     }
                 }
                 loadData();
