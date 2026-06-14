@@ -182,6 +182,10 @@
         return 'pending';
     }
 
+    function getKitchenStatus(order) {
+        return normalizeStatus(order?.bep_internal_status || order?.status);
+    }
+
     function getToday() {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -225,7 +229,8 @@
                 tableGroups[tbl] = { orders: [], debtTotal: 0, hasPrepaid: false };
             }
 
-            const s = String(o.status || '').toLowerCase().trim();
+            const s = normalizeStatus(o.status);
+            const kitchenStatus = getKitchenStatus(o);
             // Đơn trả trước: status ban đầu = 'paid', sau đó bếp đổi → cooking → done
             // Đơn trả sau:   status ban đầu = 'pending', sau đó → cooking → done
             // Cách nhận biết: nếu status = 'paid' → trả trước chưa nấu
@@ -263,7 +268,7 @@
             // Render từng đơn trong bàn
             const ordersHTML = g.orders.map(o => {
                 const s = normalizeStatus(o.status);
-                const stage = getKitchenStage(s);
+                const stage = getKitchenStage(getKitchenStatus(o));
                 const isPrepaid = isPrepaidStatus(s);
 
                 let badgeColor = '#e67e22';

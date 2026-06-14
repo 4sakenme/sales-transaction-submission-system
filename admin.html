@@ -82,6 +82,10 @@
         return String(status || '').toLowerCase().trim();
     }
 
+    function getKitchenStatus(order) {
+        return normalizeStatus(order?.bep_internal_status || order?.status);
+    }
+
     function isPrepaidStatus(status) {
         return normalizeStatus(status).startsWith('paid');
     }
@@ -89,7 +93,7 @@
     function getKitchenStage(status) {
         const normalized = normalizeStatus(status);
         if (normalized.includes('cooking') || normalized.includes('đang làm')) return 'cooking';
-        if (normalized.includes('waiting') || normalized.includes('đợi phục vụ')) return 'waiting';
+        if (normalized.includes('waiting') || normalized.includes('đợi phục vụ') || normalized === 'done') return 'waiting';
         return 'pending';
     }
 
@@ -99,28 +103,37 @@ async function loadData() {
     
     // Lọc đơn: Chờ làm, Đang nấu, Đợi phục vụ cho cả trả trước lẫn trả sau
     const bepOrders = (allOrders || []).filter(o => {
-        const s = normalizeStatus(o.status);
-        return ['pending', 'chờ làm', 'cooking', 'đang làm', 'waiting', 'đợi phục vụ', 'paid_pending', 'paid_cooking', 'paid_waiting'].includes(s);
+        const s = getKitchenStatus(o);
+        return [
+            'pending', 'chờ làm',
+            'cooking', 'đang làm',
+            'waiting', 'đợi phục vụ',
+            'done',
+            'paid', 'paid_pending', 'paid_cooking', 'paid_waiting'
+        ].includes(s);
     });
     
     if (bepOrders.length === 0) {
         ordersList.innerHTML = '<p style="text-align:center; color:#aaa; padding: 20px;">Hiện không có đơn cần làm.</p>';
     } else {
         ordersList.innerHTML = bepOrders.map(o => {
-            let st = normalizeStatus(o.status);
+            let st = getKitchenStatus(o);
             let stage = getKitchenStage(st);
             let nextStatus = null;
             let btnText = '⏳ Đang đợi phục vụ';
             let btnColor = '#95a5a6';
 
             if (stage === 'pending') {
-                nextStatus = isPrepaidStatus(st) ? 'paid_cooking' : 'cooking';
+                nextStatus = isPrepaidStatus(o.status) ? 'paid_cooking' : 'cooking';
                 btnText = '🍳 Bắt đầu nấu';
                 btnColor = '#e67e22';
             } else if (stage === 'cooking') {
-                nextStatus = isPrepaidStatus(st) ? 'paid_waiting' : 'waiting';
+                nextStatus = isPrepaidStatus(o.status) ? 'paid_waiting' : 'waiting';
                 btnText = '🔔 Đợi phục vụ';
                 btnColor = '#3498db';
+            } else if (stage === 'waiting' || st === 'done') {
+                btnText = '⏳ Đang đợi phục vụ';
+                btnColor = '#27ae60';
             }
 
             return `
@@ -160,7 +173,7 @@ async function loadData() {
     }
 
     async function updateStatus(id, nextStatus) {
-        const { error } = await adminSupabase.from('orders').update({ status: nextStatus }).eq('id', parseInt(id));
+        const { error } = await adminSupabase.from('orders').update({ status: nextStatus, bep_internal_status: nextStatus }).eq('id', parseInt(id));
         if (error) alert("Lỗi cập nhật: " + error.message);
         else loadData();
     }
