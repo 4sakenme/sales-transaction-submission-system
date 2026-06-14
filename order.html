@@ -183,7 +183,7 @@
             display: inline-block;
         }
 
-        /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT */
+        /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT & POPUP QR */
         .combo-modal {
             display: none; 
             position: fixed; 
@@ -216,6 +216,19 @@
         .btn-taste.sauce { border-color: #e67e22; color: #e67e22; background: #fffcf9; }
         .btn-taste.sauce:hover { background: #e67e22; color: white; }
         .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
+
+        /* CSS Cho hình ảnh mã QR ngân hàng có sẵn */
+        .qr-image {
+            width: 240px;
+            height: 240px;
+            margin: 15px auto;
+            display: block;
+            border: 3px solid #f5ece5;
+            border-radius: 12px;
+            object-fit: contain;
+            background: #fff;
+        }
+        .btn-confirm-pay { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 10px; }
 
         @media (max-width: 768px) {
             .waiter-container { flex-direction: column; padding: 10px; }
@@ -263,7 +276,7 @@
                 <div class="cart-total">
                     <h3 style="margin: 10px 0 5px 0;">Tổng: <span id="cart-total-price" class="money">0</span> đ</h3>
                     <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp (Trả sau)</button>
-                    <button class="btn-pay-now" onclick="submitAndPayImmediately()">💵 Thu tiền luôn (Trả trước)</button>
+                    <button class="btn-pay-now" onclick="openQrModal()">💵 Thu tiền luôn (Trả trước)</button>
                 </div>
             </section>
 
@@ -284,6 +297,18 @@
                 <button class="btn-taste sauce" onclick="selectTasteForCombo('Chiên mắm')">🍯 Combo Chiên Mắm (+0đ)</button>
             </div>
             <button class="btn-close-modal" onclick="closeComboModal()">Hủy bỏ</button>
+        </div>
+    </div>
+
+    <div id="qr-pay-modal" class="combo-modal">
+        <div class="combo-modal-content" style="max-width: 380px;">
+            <h3 style="color: #27ae60; margin-bottom: 5px;">Quét QR Của Quán</h3>
+            <p id="qr-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
+            
+            <img id="qr-pay-img" src="qr-quan.png" alt="Mã QR Quán" class="qr-image">
+            
+            <button class="btn-confirm-pay" onclick="submitAndPayImmediately()">✅ Khách đã quét - Xác nhận hoàn tất</button>
+            <button class="btn-close-modal" onclick="closeQrModal()">Đóng cửa sổ</button>
         </div>
     </div>
 
@@ -316,7 +341,6 @@
         }
 
         async function loadActiveOrders() {
-            // Chỉ lấy các đơn hàng chưa thanh toán (status khác paid) lên màn hình theo dõi của phục vụ
             const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid');
             if (error) { console.error(error); return; }
 
@@ -525,17 +549,29 @@
         }
 
         // ========================================================
-        // 💵 2. XỬ LÝ KHÁCH YÊU CẦU THANH TOÁN LUÔN (TRẢ TRƯỚC)
+        // 🏦 2. MỞ POPUP HIỆN QR CÓ SẴN
         // ========================================================
-        async function submitAndPayImmediately() {
+        function openQrModal() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
             if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
 
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
             
-            if (!confirm(`Xác nhận THU TIỀN TRƯỚC bàn ${table}\nTổng số tiền: ${total.toLocaleString()}đ`)) return;
+            // Cập nhật thông tin text hiển thị trên popup cho nhân viên dễ nhìn số tiền cần thu
+            document.getElementById('qr-modal-info').innerHTML = `<b>Bàn:</b> ${table} | <b>Cần thu:</b> <span class='money'>${total.toLocaleString()}đ</span>`;
+            document.getElementById('qr-pay-modal').style.display = 'flex';
+        }
 
+        function closeQrModal() {
+            document.getElementById('qr-pay-modal').style.display = 'none';
+        }
+
+        // 💵 3. KHÁCH THANH TOÁN XONG -> BẤM XÁC NHẬN ĐỂ ĐẨY ĐƠN LÊN DATABASE
+        async function submitAndPayImmediately() {
+            const table = document.getElementById('table-number').value.trim();
+            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
+            
             const btnPayNow = document.querySelector('.btn-pay-now');
             btnPayNow.disabled = true;
 
@@ -546,7 +582,7 @@
             });
 
             try {
-                // 2.1 Đẩy đơn lên hệ thống dạng 'paid' để ẩn khỏi danh sách cần thu tiền sau này
+                // Đẩy đơn lên hệ thống dạng 'paid' chuẩn để không bị lỗi cấu trúc cache
                 const { error: orderError } = await supabaseClient.from('orders').insert([
                     { table_number: table, items: items, total: total, status: 'paid' }
                 ]);
@@ -557,7 +593,7 @@
                     return;
                 }
 
-                // 2.2 Cộng trực tiếp số tiền này vào doanh thu tổng của ngày hôm nay luôn
+                // Cộng trực tiếp số tiền này vào doanh thu tổng của ngày hôm nay luôn
                 const todayDate = getToday();
                 const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
                 const newTotal = (rev?.total || 0) + total;
@@ -570,6 +606,7 @@
                     alert("✅ Đơn hàng Trả Trước thành công! Tiền đã cộng trực tiếp vào doanh thu hôm nay.");
                 }
 
+                closeQrModal();
                 clearCart();
 
             } catch (error) {
