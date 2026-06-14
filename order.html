@@ -659,7 +659,8 @@
                 if (!confirm(`Xác nhận thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ? Đơn hàng sẽ đóng.`)) return;
             }
 
-            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('id', orderId);
+            // Đổi thành bep_done để ẩn đơn trả sau đi khi phục vụ thu tiền tại bàn xong
+const { error: orderError } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('table_number', table).not('status', 'eq', 'paid');
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
                 return;
