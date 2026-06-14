@@ -74,7 +74,7 @@
     async function loadData() {
         document.getElementById('display-date').innerText = getDisplayDate();
 
-        // 🌟 LẤY ĐƠN HOẠT ĐỘNG: Loại bỏ những đơn đã làm xong ở bếp để lọc sạch đơn cũ, nhưng giữ lại đơn chưa thu tiền qua đêm
+        // Tải toàn bộ đơn chưa làm xong về xử lý tách biệt theo thời gian
         const { data: allOrders, error } = await adminSupabase
             .from('orders')
             .select('*')
@@ -85,11 +85,18 @@
 
         const ordersListContainer = document.getElementById('orders-list');
         
+        // Mốc thời gian đầu ngày hôm nay (00:00:00) để chặn đơn bếp cũ
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
         // --- 1. LỌC LOGIC DANH SÁCH CHO BẾP ---
         const bepOrders = (allOrders || []).filter(o => {
             const statusClean = String(o.status || '').toLowerCase().trim();
-            // Đơn hiển thị lên bếp nếu trạng thái là chờ làm, đang nấu hoặc đơn đã thanh toán trước cần làm
-            return statusClean === 'pending' || statusClean === 'chờ làm' || statusClean === 'paid' || statusClean === 'cooking' || statusClean === 'đang làm';
+            const isPendingOrCooking = statusClean === 'pending' || statusClean === 'chờ làm' || statusClean === 'paid' || statusClean === 'cooking' || statusClean === 'đang làm';
+            
+            // 🌟 ĐIỀU CHỈNH: Đơn trên bếp BẮT BUỘC phải được tạo trong ngày hôm nay mới hiện lên.
+            const orderDate = new Date(o.created_at);
+            return isPendingOrCooking && (orderDate >= startOfToday);
         });
 
         if (bepOrders.length === 0) {
@@ -109,14 +116,12 @@
                 let borderLeftColor = '#e67e22';
                 let paidBadge = '';
 
-                // Kiểm tra nếu là đơn Thu Tiền Trước (Phục vụ bấm thanh toán luôn từ app của họ)
                 if (currentStatus === 'paid') {
                     paidBadge = `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>`;
                     statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
                     buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
                     borderLeftColor = '#e67e22';
                 } 
-                // Nếu đơn đang chế biến (áp dụng cho cả trả trước và trả sau)
                 else if (currentStatus === 'cooking' || currentStatus === 'đang làm') {
                     const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
                     if (itemsStr.includes('ĐÃ TRẢ TIỀN')) {
@@ -127,7 +132,6 @@
                     buttonHTML = `<button class="btn-status" style="background: #3498db" onclick="updateStatus('${o.id}', 'bep_done')">✅ Xong (Hoàn thành đơn)</button>`;
                     borderLeftColor = '#3498db';
                 }
-                // Các đơn trả sau bình thường đang ở trạng thái chờ làm
                 else {
                     statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
                     buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
@@ -146,7 +150,7 @@
         }
 
         // --- 2. LỌC LOGIC BẢNG TÍNH TIỀN CHO THU NGÂN ---
-        // Thu ngân hiện tất cả các bàn trả sau chưa thanh toán (bỏ qua đơn 'paid' và đơn đã hoàn tất 'bep_done')
+        // 🌟 GIỮ NGUYÊN: Không lọc thời gian ở đây, bàn nào chưa trả tiền của "mọi thời đại" vẫn nằm im ở đây để thu tiền.
         const debts = (allOrders || []).filter(o => {
             const st = String(o.status).toLowerCase().trim();
             const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
@@ -168,12 +172,10 @@
             `).join('');
         }
 
-        // Hiển thị tổng doanh thu ngày hôm nay dựa theo bảng doanh thu ngày
         const { data: rev } = await adminSupabase.from('revenue').select('total').eq('date', getToday()).maybeSingle();
         document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
     }
 
-    // 🌟 ĐÃ GỘP CHUNG: Hàm cập nhật trạng thái chuẩn, không đụng tới cột lạ
     async function updateStatus(id, nextStatus) {
         const { error } = await adminSupabase.from('orders').update({ status: nextStatus }).eq('id', parseInt(id));
         if (error) { 
@@ -186,7 +188,6 @@
     async function payTable(table, amount) {
         if(!confirm("Thu tiền bàn " + table + "? Đơn sẽ được chuyển sang trạng thái Đã Thanh Toán.")) return;
         
-        // Đổi trạng thái đơn sang 'paid' để đóng hóa đơn và lưu doanh thu
         const { error: orderError } = await adminSupabase.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
         if (orderError) {
             alert("Lỗi ẩn đơn hàng: " + orderError.message);
@@ -205,7 +206,6 @@
         loadData();
     }
 
-    // Cơ chế realtime lắng nghe thay đổi đơn hàng từ Supabase
     adminSupabase.channel('admin-legacy-fixed-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
             if (payload.eventType === 'INSERT') {
