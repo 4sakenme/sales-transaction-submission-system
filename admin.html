@@ -106,8 +106,11 @@
                 let borderLeftColor = '#e67e22';
                 let paidBadge = '';
 
+                // Kiểm tra xem đơn này bản chất ban đầu có phải là đơn đã trả tiền trước hay không
                 const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-                if (currentStatus === 'paid' || itemsStr.includes('ĐÃ TRẢ TIỀN') || itemsStr.includes('CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT')) {
+                const isPaidBefore = currentStatus === 'paid' || itemsStr.includes('ĐÃ TRẢ TIỀN') || itemsStr.includes('CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT');
+
+                if (isPaidBefore) {
                     paidBadge = `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>`;
                 }
 
@@ -141,11 +144,14 @@
             }).join('');
         }
 
-        // BẢNG TÍNH TIỀN CHO THU NGÂN (ĐƠN TRẢ SAU)
+        // BẢNG TÍNH TIỀN CHO THU NGÂN (CHỈ LỌC ĐƠN TRẢ SAU)
         const debts = (allOrders || []).filter(o => {
             const st = String(o.status).toLowerCase().trim();
             const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-            return st !== 'paid' && !itemsStr.includes('CHUYỂN KHOẢN') && !itemsStr.includes('TIỀN MẶT');
+            
+            // Loại trừ hoàn toàn các đơn có dấu hiệu đã trả tiền trước, kể cả khi trạng thái đang là cooking hay waiting
+            const isPaidBefore = st === 'paid' || itemsStr.includes('ĐÃ TRẢ TIỀN') || itemsStr.includes('CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT');
+            return !isPaidBefore;
         }).reduce((acc, o) => {
             acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
             return acc;
