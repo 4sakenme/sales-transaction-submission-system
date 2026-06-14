@@ -492,13 +492,13 @@
                 return `
                     <div class="cart-row">
                         <div class="cart-row-top">
-                            <div style="flex:1; font-size:13px;"><strong>${item.name}</strong></div>
+                            <div style="flex:1; font-size:16px; color:#4e3629;"><strong>${item.name}</strong></div>
                             <div style="margin-right:10px;">
                                 <button class="btn-qty" onclick="changeQty('${key}', -1)">-</button>
-                                <span style="display:inline-block; width:15px; text-align:center; font-size:13px;">${item.quantity}</span>
+                                <span style="display:inline-block; width:15px; text-align:center; font-size:14px; font-weight:bold;">${item.quantity}</span>
                                 <button class="btn-qty" onclick="changeQty('${key}', 1)">+</button>
                             </div>
-                            <div class="money" style="font-size:13px;">${(item.price * item.quantity).toLocaleString()} đ</div>
+                            <div class="money" style="font-size:14px;">${(item.price * item.quantity).toLocaleString()} đ</div>
                         </div>
                         <input type="text" class="cart-note-input" placeholder="💡 Ghi chú thêm (ít đá, cay...)" 
                                value="${item.note || ''}" oninput="updateNote('${key}', this.value)">
