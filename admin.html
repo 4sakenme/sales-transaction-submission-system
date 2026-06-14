@@ -60,7 +60,6 @@
     }
     adminSupabase = window.supabaseClientInstance;
 
-    // 🔔 KHỞI TẠO ĐỐI TƯỢNG PHÁT ÂM THANH CHUÔNG BÁO (GIỮ NGUYÊN)
     const orderNotificationSound = new Audio("bell.mp3");
 
     function getToday() {
@@ -76,7 +75,7 @@
     async function loadData() {
         document.getElementById('display-date').innerText = getDisplayDate();
 
-        // Lấy tất cả các đơn hàng chưa hoàn tất xử lý ở bếp (loại trừ hẳn 'bep_done') để giữ lại đơn qua đêm
+        // Lấy tất cả các đơn chưa ẩn hoàn toàn khỏi hệ thống
         const { data: allOrders, error } = await adminSupabase
             .from('orders')
             .select('*')
@@ -87,10 +86,10 @@
 
         const ordersListContainer = document.getElementById('orders-list');
         
-        // --- 1. LỌC LOGIC DANH SÁCH CHO BẾP ---
+        // --- 1. LOGIC 3 GIAI ĐOẠN CHO BẾP ---
         const bepOrders = (allOrders || []).filter(o => {
             const statusClean = String(o.status || '').toLowerCase().trim();
-            return statusClean === 'pending' || statusClean === 'chờ làm' || statusClean === 'paid' || statusClean === 'cooking' || statusClean === 'đang làm';
+            return statusClean === 'pending' || statusClean === 'chờ làm' || statusClean === 'paid' || statusClean === 'cooking' || statusClean === 'đang làm' || statusClean === 'waiting' || statusClean === 'đợi phục vụ';
         });
 
         if (bepOrders.length === 0) {
@@ -110,29 +109,29 @@
                 let borderLeftColor = '#e67e22';
                 let paidBadge = '';
 
-                // Kiểm tra nếu là đơn Đã thanh toán trước (status ban đầu = paid)
-                if (currentStatus === 'paid') {
+                // Kiểm tra gắn nhãn nếu chuỗi hoặc trạng thái có chứa thông tin trả trước
+                const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
+                if (currentStatus === 'paid' || itemsStr.includes('ĐÃ TRẢ TIỀN') || itemsStr.includes('CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT')) {
                     paidBadge = `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>`;
+                }
+
+                // Giai đoạn 1: Chờ làm (Áp dụng cho cả đơn mới tinh 'pending' hoặc đơn trả trước 'paid')
+                if (currentStatus === 'pending' || currentStatus === 'chờ làm' || currentStatus === 'paid') {
                     statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
-                    buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
+                    buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu nấu</button>`;
                     borderLeftColor = '#e67e22';
                 } 
-                // Trạng thái đang chế biến món ăn (áp dụng chung cho cả đơn trả trước và trả sau)
+                // Giai đoạn 2: Đang nấu
                 else if (currentStatus === 'cooking' || currentStatus === 'đang làm') {
-                    const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-                    if (itemsStr.includes('ĐÃ TRẢ TIỀN')) {
-                        paidBadge = `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>`;
-                    }
-                    
                     statusTextText = '<span style="color: #3498db; font-weight: bold;">Đang nấu</span>';
-                    buttonHTML = `<button class="btn-status" style="background: #3498db" onclick="updateStatus('${o.id}', 'bep_done')">✅ Xong (Hoàn thành đơn)</button>`;
+                    buttonHTML = `<button class="btn-status" style="background: #3498db" onclick="updateStatus('${o.id}', 'waiting')">🔔 Nấu xong - Đợi phục vụ bưng</button>`;
                     borderLeftColor = '#3498db';
                 }
-                // Trạng thái chờ làm của đơn trả sau bình thường
-                else {
-                    statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
-                    buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
-                    borderLeftColor = '#e67e22';
+                // Giai đoạn 3: Đợi phục vụ (Khóa nút bấm bên phía Bếp, tránh bấm nhầm làm mất đơn)
+                else if (currentStatus === 'waiting' || currentStatus === 'đợi phục vụ') {
+                    statusTextText = '<span style="color: #7f8c8d; font-weight: bold;">Đang đợi phục vụ bưng món...</span>';
+                    buttonHTML = `<button class="btn-status" style="background: #95a5a6; cursor: not-allowed;" disabled>⏳ Chờ Phục vụ bấm xác nhận bưng</button>`;
+                    borderLeftColor = '#7f8c8d';
                 }
 
                 return `
@@ -146,12 +145,12 @@
             }).join('');
         }
 
-        // --- 2. LỌC LOGIC BẢNG TÍNH TIỀN CHO THU NGÂN ---
-        // Thu ngân quản lý tất cả các đơn trả sau chưa thanh toán tiền mặt (loại bỏ đơn trả trước 'paid' và 'bep_done')
+        // --- 2. LOGIC BẢNG TÍNH TIỀN CHO THU NGÂN ---
         const debts = (allOrders || []).filter(o => {
             const st = String(o.status).toLowerCase().trim();
+            // Chỉ tính những đơn chưa thanh toán trước, không tính đơn 'paid', 'waiting' của trả trước, chỉ gom đơn trả sau
             const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-            return st !== 'paid' && st !== 'bep_done' && !itemsStr.includes('ĐÃ TRẢ TIỀN');
+            return st !== 'paid' && !itemsStr.includes('CHUYỂN KHOẢN') && !itemsStr.includes('TIỀN MẶT');
         }).reduce((acc, o) => {
             acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
             return acc;
@@ -169,12 +168,10 @@
             `).join('');
         }
 
-        // Hiển thị tổng doanh thu ngày hôm nay (Doanh thu tổng hợp theo ngày chuẩn)
         const { data: rev } = await adminSupabase.from('revenue').select('total').eq('date', getToday()).maybeSingle();
         document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
     }
 
-    // Hàm cập nhật trạng thái đồng bộ duy nhất qua cột `status`
     async function updateStatus(id, nextStatus) {
         const { error } = await adminSupabase.from('orders').update({ status: nextStatus }).eq('id', parseInt(id));
         if (error) { 
@@ -187,7 +184,7 @@
     async function payTable(table, amount) {
         if(!confirm("Thu tiền bàn " + table + "? Đơn sẽ được chuyển sang trạng thái Đã Thanh Toán.")) return;
         
-        const { error: orderError } = await adminSupabase.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
+        const { error: orderError } = await adminSupabase.from('orders').update({ status: 'bep_done' }).eq('table_number', table).not('status', 'eq', 'paid');
         if (orderError) {
             alert("Lỗi ẩn đơn hàng: " + orderError.message);
             return;
@@ -205,14 +202,11 @@
         loadData();
     }
 
-    // ========================================================
-    // 🔔 KÊNH REALTIME - PHÁT ÂM THANH KHI CÓ ĐƠN MỚI ĐẨY LÊN
-    // ========================================================
     adminSupabase.channel('admin-legacy-fixed-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
             if (payload.eventType === 'INSERT') {
                 orderNotificationSound.play().catch(e => {
-                    console.log("Trình duyệt tạm chặn âm thanh Autoplay ban đầu: " + e.message);
+                    console.log("Autoplay bị chặn: " + e.message);
                 });
             }
             loadData();
