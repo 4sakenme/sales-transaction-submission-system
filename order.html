@@ -262,7 +262,7 @@
     <main class="waiter-container">
         <section class="menu-section">
             <h2>Danh sách món</h2>
-            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
+            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh...">
             
             <div class="category-tabs">
                 <button class="tab-btn active" onclick="switchCategory('ALL', event)">✨ Tất cả</button>
@@ -357,6 +357,12 @@
             } catch (e) { console.error(e); }
 
             loadActiveOrders();
+            
+            // ĐÃ FIX: Lắng nghe sự kiện input trực tiếp từ Javascript an toàn hơn
+            const searchBar = document.getElementById('search-bar');
+            if (searchBar) {
+                searchBar.addEventListener('input', renderMenu);
+            }
         }
 
         async function loadActiveOrders() {
@@ -450,7 +456,8 @@
 
         function renderMenu() {
             const grid = document.getElementById('menu-grid');
-            const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
+            const searchBar = document.getElementById('search-bar');
+            const searchText = searchBar ? searchBar.value.toLowerCase().trim() : '';
 
             const filteredItems = menu.filter(item => {
                 const itemCat = (item.category || '').toString().toUpperCase().trim();
@@ -563,8 +570,6 @@
             if(event && event.target) event.target.classList.add('active');
             renderMenu();
         }
-
-        function filterMenu() { renderMenu(); }
 
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
@@ -682,7 +687,6 @@
             }
         }
 
-        // ĐÃ FIX: Chuyển sang update theo orderId thay vì table_number để tránh ẩn nhầm các đơn trùng số bàn khác
         async function payTableFast(orderId, table, amount, hasUnfinished) {
             if (hasUnfinished) {
                 if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG hoàn toàn!\nBạn có chắc chắn muốn tính tiền sớm và đóng đơn của bàn này không?`)) {
@@ -694,7 +698,7 @@
 
             const { error: orderError } = await supabaseClient.from('orders')
                 .update({ status: 'bep_done' })
-                .eq('id', parseInt(orderId)); // Nhắm chính xác ID đơn hàng cần đóng
+                .eq('id', parseInt(orderId)); 
 
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
