@@ -150,11 +150,20 @@
         .waiter-order-card {
             background: #fffbf7;
             border: 1px solid #eddcd0;
-            border-left: 5px solid #27ae60;
+            border-left: 5px solid #e67e22;
             padding: 12px;
             border-radius: 10px;
             margin-bottom: 12px;
+            transition: 0.3s;
         }
+        
+        /* Hiệu ứng nhấp nháy báo phục vụ bưng bê đồ ăn khẩn cấp */
+        @keyframes blink-waiting {
+            0% { background-color: #fffbf7; box-shadow: 0 0 5px rgba(39, 174, 96, 0.2); }
+            50% { background-color: #ebf7ee; box-shadow: 0 0 15px rgba(39, 174, 96, 0.6); border-color: #27ae60; }
+            100% { background-color: #fffbf7; box-shadow: 0 0 5px rgba(39, 174, 96, 0.2); }
+        }
+
         .waiter-order-card h4 { margin: 0 0 6px 0; color: #333; display: flex; justify-content: space-between; }
         .waiter-order-card ul { margin: 5px 0; padding-left: 18px; font-size: 13px; color: #555; }
         
@@ -325,7 +334,7 @@
 
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3IDEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': 'beut123' } }
@@ -369,8 +378,16 @@
 
                 let badgeColor = '#e67e22'; 
                 let badgeText = 'Chờ làm';
-                if (o.status === 'cooking' || o.status === 'đang làm') { badgeColor = '#e7a460'; badgeText = 'Đang nấu'; }
-                if (o.status === 'waiting' || o.status === 'đợi phục vụ') { badgeColor = '#27ae60'; badgeText = 'Đợi bưng'; }
+                let currentStatus = String(o.status || '').toLowerCase().trim();
+                
+                if (currentStatus === 'cooking' || currentStatus === 'đang làm') { 
+                    badgeColor = '#e7a460'; 
+                    badgeText = 'Đang nấu'; 
+                }
+                if (currentStatus === 'waiting' || currentStatus === 'đợi phục vụ') { 
+                    badgeColor = '#27ae60'; 
+                    badgeText = '🔔 ĐÃ NẤU XONG!'; 
+                }
 
                 const statusBadge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
 
@@ -381,18 +398,38 @@
                 }
 
                 let actionButtonHTML = '';
-                // 1. ĐƠN TRẢ TRƯỚC: Hiện trạng thái, CHỈ HIỆN nút Xong (Đã bưng), KHÔNG CÓ nút Thu tiền
+                let cardBlinkStyle = ''; // Biến lưu style nhấp nháy
+
+                // Nếu bếp đã nấu xong, kích hoạt hiệu ứng nhấp nháy trên thẻ bàn ăn
+                if (currentStatus === 'waiting' || currentStatus === 'đợi phục vụ') {
+                    cardBlinkStyle = 'animation: blink-waiting 1.5s infinite; border-left: 5px solid #27ae60;';
+                } else {
+                    cardBlinkStyle = `border-left: 5px solid ${isPaidAhead ? '#27ae60' : '#e67e22'};`;
+                }
+
+                // 1. ĐƠN TRẢ TRƯỚC: Chỉ có duy nhất nút Xong (Đã bưng món) để đóng đơn
                 if (isPaidAhead) {
                     actionButtonHTML = `
                         <button class="btn-delivered-fast" onclick="markAsDelivered('${o.id}')">
-                            ✅ Xong (Đã bưng món)
+                            🏃‍♂️ Đã bưng món (Hoàn tất)
                         </button>
                     `;
                 } 
-                // 2. ĐƠN TRẢ SAU: CHỈ HIỆN nút Thu tiền tại bàn, KHÔNG CÓ nút Xong (Đã bưng)
+                // 2. ĐƠN TRẢ SAU: Đầy đủ 2 nút hành động (Bưng món nếu nấu xong, và Thu tiền tại bàn)
                 else {
-                    const hasUnfinished = (o.status !== 'waiting' && o.status !== 'đợi phục vụ');
+                    let deliverButtonHTML = '';
+                    // Nếu bếp đã làm xong, hiện thêm nút Đã bưng món để phục vụ xác nhận
+                    if (currentStatus === 'waiting' || currentStatus === 'đợi phục vụ') {
+                        deliverButtonHTML = `
+                            <button class="btn-delivered-fast" style="margin-bottom: 5px;" onclick="markAsDelivered('${o.id}')">
+                                🏃‍♂️ Đã bưng lên bàn (Xong món)
+                            </button>
+                        `;
+                    }
+                    
+                    const hasUnfinished = (currentStatus !== 'waiting' && currentStatus !== 'đợi phục vụ');
                     actionButtonHTML = `
+                        ${deliverButtonHTML}
                         <button class="btn-pay-fast" onclick="payTableFast('${o.id}', '${o.table_number}', ${o.total}, ${hasUnfinished})">
                             💵 Thu tiền tại bàn
                         </button>
@@ -400,7 +437,7 @@
                 }
 
                 return `
-                    <div class="waiter-order-card" style="border-left-color: ${isPaidAhead ? '#27ae60' : '#e67e22'}">
+                    <div class="waiter-order-card" style="${cardBlinkStyle}">
                         <h4>
                             <span>📍 Bàn: ${o.table_number} ${isPaidAhead ? '<b style="color:#27ae60; font-size:11px;">[TRẢ TRƯỚC]</b>' : ''}</span>
                             <span class="money">${o.total.toLocaleString()}đ</span>
@@ -408,7 +445,9 @@
                         <ul style="list-style-type: square; padding-left: 20px;">
                             ${itemsListHTML}
                         </ul>
-                        ${actionButtonHTML}
+                        <div style="margin-top: 10px;">
+                            ${actionButtonHTML}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -637,19 +676,19 @@
             loadActiveOrders();
         }
 
-        // Hàm hoàn tất đơn TRẢ TRƯỚC khi phục vụ bưng xong
+        // Hàm hoàn tất đơn (Đã bưng món lên bàn) cho cả Trả trước lẫn Trả sau
         async function markAsDelivered(orderId) {
-            if (!confirm("Xác nhận đã bưng món hoàn tất cho khách? Đơn hàng trả trước này sẽ được lưu và đóng lại.")) return;
+            if (!confirm("Xác nhận đã bưng món hoàn tất lên bàn cho khách? Đơn hàng này sẽ đóng lại.")) return;
             
             const { error } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('id', orderId);
             if (error) {
-                alert("Lỗi cập nhật: " + error.message);
+                alert("Lỗi cập nhật trạng thái bưng món: " + error.message);
             } else {
                 loadActiveOrders();
             }
         }
 
-        // Hàm thanh toán đơn TRẢ SAU của Phục vụ
+        // Hàm thanh toán đơn TRẢ SAU của Phục vụ tại bàn
         async function payTableFast(orderId, table, amount, hasUnfinished) {
             if (hasUnfinished) {
                 if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG hoàn toàn!\nBạn có chắc chắn muốn tính tiền sớm và đóng đơn của bàn này không?`)) {
@@ -659,8 +698,8 @@
                 if (!confirm(`Xác nhận thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ? Đơn hàng sẽ đóng.`)) return;
             }
 
-            // Đổi thành bep_done để ẩn đơn trả sau đi khi phục vụ thu tiền tại bàn xong
-const { error: orderError } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('table_number', table).not('status', 'eq', 'paid');
+            // Đổi thành bep_done để ẩn đơn trả sau đi khi phục vụ thu tiền tại bàn xong hẳn
+            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('table_number', table).not('status', 'eq', 'paid');
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
                 return;
