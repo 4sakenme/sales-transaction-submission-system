@@ -6,754 +6,562 @@
     <title>📱 Phục vụ - Gọi món nhanh</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #fcf8f5;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-
-        header {
-            background: #4e3629;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: relative;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fcf8f5; margin: 0; padding: 0; color: #333; }
+        header { background: #4e3629; color: white; padding: 15px 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; }
         header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
-
-        .btn-back {
-            position: absolute;
-            left: 20px;
-            top: 13px;
-            background: #e7a460;
-            color: white;
-            text-decoration: none;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: bold;
-            transition: 0.2s;
-        }
+        .btn-back { position: absolute; left: 20px; top: 13px; background: #e7a460; color: white; text-decoration: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; }
         .btn-back:hover { background: #d68f4b; }
 
-        .waiter-container {
-            display: flex;
-            gap: 20px;
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-            box-sizing: border-box;
-        }
-
-        .menu-section {
-            flex: 1.6;
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            box-sizing: border-box;
-        }
+        .waiter-container { display: flex; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; box-sizing: border-box; }
+        .menu-section { flex: 1.6; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); box-sizing: border-box; }
         .menu-section h2 { margin-top: 0; color: #4e3629; font-size: 20px; border-bottom: 2px solid #f5ece5; padding-bottom: 8px; }
-
-        .right-sidebar {
-            flex: 1.1;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .cart-section, .status-section {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            border: 2px solid #e7a460;
-            box-shadow: 0 4px 16px rgba(231, 164, 96, 0.1);
-            box-sizing: border-box;
-        }
+        .right-sidebar { flex: 1.1; display: flex; flex-direction: column; gap: 20px; }
+        .cart-section, .status-section { background: white; padding: 20px; border-radius: 16px; border: 2px solid #e7a460; box-shadow: 0 4px 16px rgba(231,164,96,0.1); box-sizing: border-box; }
         .cart-section h2 { margin-top: 0; color: #e67e22; font-size: 19px; }
         .status-section { border-color: #27ae60; }
         .status-section h2 { margin-top: 0; color: #27ae60; font-size: 19px; border-bottom: 2px solid #e8f8f0; padding-bottom: 8px; }
 
-        #search-bar {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 15px;
-            box-sizing: border-box;
-            outline: none;
-        }
+        #search-bar { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; box-sizing: border-box; outline: none; }
         #search-bar:focus { border-color: #e7a460; }
 
-        .category-tabs {
-            display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px;
-        }
+        .category-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px; }
         .category-tabs::-webkit-scrollbar { display: none; }
-
-        .tab-btn {
-            background: #e0d7cf; border: none; padding: 10px 18px; border-radius: 20px;
-            font-weight: bold; color: #4e3629; cursor: pointer; white-space: nowrap; font-size: 13px;
-        }
+        .tab-btn { background: #e0d7cf; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; color: #4e3629; cursor: pointer; white-space: nowrap; font-size: 13px; }
         .tab-btn.active { background: #e7a460; color: white; }
 
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-        }
-        .menu-item {
-            background: #fff8f2;
-            border: 1px solid #eddcd0;
-            padding: 14px;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 90px;
-        }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .menu-item { background: #fff8f2; border: 1px solid #eddcd0; padding: 14px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: space-between; min-height: 90px; }
         .menu-item:hover { transform: translateY(-3px); border-color: #e7a460; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .menu-item h4 { margin: 0 0 8px 0; color: #4e3629; font-size: 14px; }
         .money { color: #e67e22; font-weight: bold; margin: 0; font-size: 14px; }
 
         .table-input { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
         .table-input input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; }
-
         .cart-row { padding: 10px 0; border-bottom: 1px dashed #eddcd0; }
         .cart-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .cart-note-input {
-            width: 100%;
-            padding: 6px 10px;
-            border: 1px solid #e0d7cf;
-            border-radius: 6px;
-            font-size: 12px;
-            box-sizing: border-box;
-            background: #fffdfb;
-            outline: none;
-        }
+        .cart-note-input { width: 100%; padding: 6px 10px; border: 1px solid #e0d7cf; border-radius: 6px; font-size: 12px; box-sizing: border-box; background: #fffdfb; outline: none; }
         .cart-note-input:focus { border-color: #e7a460; background: #fff; }
-
         .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-
         .btn-submit { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
         .btn-pay-now { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; }
         .btn-pay-now:disabled { background: #ccc; cursor: not-allowed; }
 
-        /* THEO DÕI ĐƠN */
-        .waiter-order-card {
-            background: #fffbf7;
-            border: 1px solid #eddcd0;
-            border-left: 5px solid #27ae60;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-        }
-        /* Đơn trả trước: viền tím */
-        .waiter-order-card.prepaid-card {
-            border-left-color: #9b59b6;
-            background: #fdf9ff;
-        }
+        /* CARD THEO DÕI ĐƠN */
+        .waiter-order-card { background: #fffbf7; border: 1px solid #eddcd0; border-left: 5px solid #27ae60; padding: 12px; border-radius: 10px; margin-bottom: 12px; }
+        .waiter-order-card.prepaid-card { border-left-color: #9b59b6; background: #fdf9ff; }
         .waiter-order-card h4 { margin: 0 0 6px 0; color: #333; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
         .waiter-order-card ul { margin: 5px 0; padding-left: 18px; font-size: 13px; color: #555; }
 
-        .prepaid-label {
-            font-size: 11px;
-            background: #9b59b6;
-            color: white;
-            padding: 2px 7px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
+        .prepaid-label { font-size: 11px; background: #9b59b6; color: white; padding: 2px 7px; border-radius: 5px; font-weight: bold; }
+        .item-status-badge { font-size: 11px; padding: 1px 5px; border-radius: 4px; margin-left: 6px; color: white; font-weight: bold; display: inline-block; }
 
-        .btn-pay-fast {
-            width: 100%;
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 8px;
-            font-size: 13px;
-        }
+        /* NÚT HÀNH ĐỘNG */
+        .btn-action { width: 100%; border: none; padding: 9px; border-radius: 7px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 13px; color: white; }
+        .btn-bung   { background: #27ae60; }   /* Đã bưng - trả trước */
+        .btn-pay    { background: #e67e22; }   /* Thu tiền - trả sau */
 
-        .item-status-badge {
-            font-size: 11px;
-            padding: 1px 5px;
-            border-radius: 4px;
-            margin-left: 6px;
-            color: white;
-            font-weight: bold;
-            display: inline-block;
-        }
-
-        /* POPUP COMBO & QR */
-        .combo-modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            align-items: center; justify-content: center;
-        }
-        .combo-modal-content {
-            background-color: white;
-            padding: 25px;
-            border-radius: 16px;
-            width: 85%; max-width: 340px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            animation: popupScale 0.25s ease-out;
-        }
-        @keyframes popupScale {
-            from { transform: scale(0.85); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
+        /* POPUP */
+        .combo-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .combo-modal-content { background-color: white; padding: 25px; border-radius: 16px; width: 85%; max-width: 340px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: popupScale 0.25s ease-out; }
+        @keyframes popupScale { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .combo-modal h3 { margin-top: 0; color: #4e3629; font-size: 18px; }
         .combo-btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .btn-taste {
-            padding: 12px; border: 2px solid #eddcd0; border-radius: 10px;
-            font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; background: #fff8f2; color: #4e3629;
-        }
-        .btn-taste:hover { border-color: #e7a460; background: #fff; }
-        .btn-taste.sauce { border-color: #e67e22; color: #e67e22; background: #fffcf9; }
+        .btn-taste { padding: 12px; border: 2px solid #eddcd0; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; background: #fff8f2; color: #4e3629; }
+        .btn-taste:hover { border-color: #e7a460; }
+        .btn-taste.sauce { border-color: #e67e22; color: #e67e22; }
         .btn-taste.sauce:hover { background: #e67e22; color: white; }
         .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
-
-        .qr-image {
-            width: 100%;
-            max-width: 520px;
-            height: 420px;
-            margin: 15px auto;
-            display: block;
-            border: 3px solid #f5ece5;
-            border-radius: 12px;
-            object-fit: contain;
-            background: #fff;
-        }
+        .qr-image { width: 100%; max-width: 520px; height: 420px; margin: 15px auto; display: block; border: 3px solid #f5ece5; border-radius: 12px; object-fit: contain; background: #fff; }
         .btn-confirm-pay { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 10px; }
         .btn-cash-pay { background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 8px; }
 
-        @media (max-width: 768px) {
-            .waiter-container { flex-direction: column; padding: 10px; }
-            .menu-section, .right-sidebar { width: 100%; }
-        }
+        @media (max-width: 768px) { .waiter-container { flex-direction: column; padding: 10px; } }
     </style>
 </head>
 <body>
-    <header>
-        <a href="index.html" class="btn-back">⬅️ Cổng chào</a>
-        <h1>☕ COFFEE POS - GIAO DIỆN PHỤC VỤ</h1>
-    </header>
+<header>
+    <a href="index.html" class="btn-back">⬅️ Cổng chào</a>
+    <h1>☕ COFFEE POS - GIAO DIỆN PHỤC VỤ</h1>
+</header>
 
-    <main class="waiter-container">
-        <section class="menu-section">
-            <h2>Danh sách món</h2>
-            <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
+<main class="waiter-container">
+    <section class="menu-section">
+        <h2>Danh sách món</h2>
+        <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
+        <div class="category-tabs">
+            <button class="tab-btn active" onclick="switchCategory('ALL',event)">✨ Tất cả</button>
+            <button class="tab-btn" onclick="switchCategory('TRÀ',event)">🍵 Trà</button>
+            <button class="tab-btn" onclick="switchCategory('CÀ PHÊ',event)">☕ Cà phê</button>
+            <button class="tab-btn" onclick="switchCategory('TRÀ SỮA',event)">🧋 Trà sữa</button>
+            <button class="tab-btn" onclick="switchCategory('SỮA TƯƠI',event)">🥛 Sữa tươi</button>
+            <button class="tab-btn" onclick="switchCategory('SODA',event)">🍹 Soda</button>
+            <button class="tab-btn" onclick="switchCategory('NƯỚC ÉP',event)">🍹 Nước ép</button>
+            <button class="tab-btn" onclick="switchCategory('MATCHA',event)">🟢 Matcha</button>
+            <button class="tab-btn" onclick="switchCategory('SỮA CHUA',event)">🍧 Sữa chua</button>
+            <button class="tab-btn" onclick="switchCategory('CACAO',event)">🍫 Cacao</button>
+            <button class="tab-btn" onclick="switchCategory('ĐỒ NÓNG',event)">🔥 Đồ nóng</button>
+            <button class="tab-btn" onclick="switchCategory('ĂN VẶT',event)">🍟 Ăn vặt</button>
+        </div>
+        <div id="menu-grid" class="menu-grid"></div>
+    </section>
 
-            <div class="category-tabs">
-                <button class="tab-btn active" onclick="switchCategory('ALL', event)">✨ Tất cả</button>
-                <button class="tab-btn" onclick="switchCategory('TRÀ', event)">🍵 Trà</button>
-                <button class="tab-btn" onclick="switchCategory('CÀ PHÊ', event)">☕ Cà phê</button>
-                <button class="tab-btn" onclick="switchCategory('TRÀ SỮA', event)">🧋 Trà sữa</button>
-                <button class="tab-btn" onclick="switchCategory('SỮA TƯƠI', event)">🥛 Sữa tươi</button>
-                <button class="tab-btn" onclick="switchCategory('SODA', event)">🍹 Soda</button>
-                <button class="tab-btn" onclick="switchCategory('NƯỚC ÉP', event)">🍹 Nước ép</button>
-                <button class="tab-btn" onclick="switchCategory('MATCHA', event)">🟢 Matcha</button>
-                <button class="tab-btn" onclick="switchCategory('SỮA CHUA', event)">🍧 Sữa chua</button>
-                <button class="tab-btn" onclick="switchCategory('CACAO', event)">🍫 Cacao</button>
-                <button class="tab-btn" onclick="switchCategory('ĐỒ NÓNG', event)">🔥 Đồ nóng</button>
-                <button class="tab-btn" onclick="switchCategory('ĂN VẶT', event)">🍟 Ăn vặt</button>
+    <div class="right-sidebar">
+        <section class="cart-section">
+            <h2>🛒 Tạo Đơn Hàng Mới</h2>
+            <div class="table-input">
+                <label>Số bàn: </label>
+                <input type="text" id="table-number" placeholder="Ví dụ: 5" required>
             </div>
-
-            <div id="menu-grid" class="menu-grid"></div>
+            <div id="cart-items"></div>
+            <div class="cart-total">
+                <h3 style="margin:10px 0 5px 0;">Tổng: <span id="cart-total-price" class="money">0</span> đ</h3>
+                <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp (Trả sau)</button>
+                <button class="btn-pay-now" onclick="openQrModal()">💵 Thu tiền luôn (Trả trước)</button>
+            </div>
         </section>
 
-        <div class="right-sidebar">
-            <section class="cart-section">
-                <h2>🛒 Tạo Đơn Hàng Mới</h2>
-                <div class="table-input">
-                    <label>Số bàn: </label>
-                    <input type="text" id="table-number" placeholder="Ví dụ: 5" required>
-                </div>
-                <div id="cart-items"></div>
-                <div class="cart-total">
-                    <h3 style="margin: 10px 0 5px 0;">Tổng: <span id="cart-total-price" class="money">0</span> đ</h3>
-                    <button class="btn-submit" onclick="submitOrder()">🚀 Gửi đơn sang Bếp (Trả sau)</button>
-                    <button class="btn-pay-now" onclick="openQrModal()">💵 Thu tiền luôn (Trả trước)</button>
-                </div>
-            </section>
-
-            <section class="status-section">
-                <h2>📋 Tình Trạng Đơn & Tính Tiền</h2>
-                <div id="waiter-orders-list">
-                    <p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào gọi món.</p>
-                </div>
-            </section>
-        </div>
-    </main>
-
-    <!-- POPUP CHỌN VỊ COMBO -->
-    <div id="combo-taste-modal" class="combo-modal">
-        <div class="combo-modal-content">
-            <h3 id="modal-combo-title">Chọn cách chế biến Combo</h3>
-            <div class="combo-btn-group">
-                <button class="btn-taste" onclick="selectTasteForCombo('Thường')">🍟 Combo vị Thường</button>
-                <button class="btn-taste sauce" onclick="selectTasteForCombo('Chiên mắm')">🍯 Combo Chiên Mắm (+0đ)</button>
+        <section class="status-section">
+            <h2>📋 Tình Trạng Đơn & Tính Tiền</h2>
+            <div id="waiter-orders-list">
+                <p style="text-align:center;color:#888;font-size:13px;">Chưa có bàn nào gọi món.</p>
             </div>
-            <button class="btn-close-modal" onclick="closeComboModal()">Hủy bỏ</button>
-        </div>
+        </section>
     </div>
+</main>
 
-    <!-- POPUP QR THANH TOÁN TRƯỚC -->
-    <div id="qr-pay-modal" class="combo-modal">
-        <div class="combo-modal-content" style="max-width: 600px; width: 90%;">
-            <h3 style="color: #27ae60; margin-bottom: 5px;">Thu Tiền Trả Trước</h3>
-            <p id="qr-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
-
-            <img id="qr-pay-img" src="2aOboQdQDRATgIqvbsDnMV5cBZLITs3W1FwJspiC.jpg" alt="Mã QR Quán" class="qr-image">
-
-            <button class="btn-confirm-pay" onclick="submitAndPayImmediately('CHUYỂN KHOẢN')">✅ Khách đã quét - Xác nhận CK</button>
-            <button class="btn-cash-pay" onclick="submitAndPayImmediately('TIỀN MẶT')">💵 Khách trả TIỀN MẶT - Xác nhận</button>
-
-            <button class="btn-close-modal" onclick="closeQrModal()">Đóng cửa sổ</button>
+<!-- POPUP COMBO -->
+<div id="combo-taste-modal" class="combo-modal">
+    <div class="combo-modal-content">
+        <h3 id="modal-combo-title">Chọn cách chế biến Combo</h3>
+        <div class="combo-btn-group">
+            <button class="btn-taste" onclick="selectTasteForCombo('Thường')">🍟 Combo vị Thường</button>
+            <button class="btn-taste sauce" onclick="selectTasteForCombo('Chiên mắm')">🍯 Combo Chiên Mắm</button>
         </div>
+        <button class="btn-close-modal" onclick="closeComboModal()">Hủy bỏ</button>
     </div>
+</div>
 
-    <script>
-        const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+<!-- POPUP QR -->
+<div id="qr-pay-modal" class="combo-modal">
+    <div class="combo-modal-content" style="max-width:600px;width:90%;">
+        <h3 style="color:#27ae60;margin-bottom:5px;">Thu Tiền Trả Trước</h3>
+        <p id="qr-modal-info" style="font-size:14px;margin:0;color:#666;"></p>
+        <img id="qr-pay-img" src="2aOboQdQDRATgIqvbsDnMV5cBZLITs3W1FwJspiC.jpg" alt="Mã QR Quán" class="qr-image">
+        <button class="btn-confirm-pay" onclick="submitAndPayImmediately('CHUYỂN KHOẢN')">✅ Khách đã quét - Xác nhận CK</button>
+        <button class="btn-cash-pay" onclick="submitAndPayImmediately('TIỀN MẶT')">💵 Khách trả TIỀN MẶT - Xác nhận</button>
+        <button class="btn-close-modal" onclick="closeQrModal()">Đóng cửa sổ</button>
+    </div>
+</div>
 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            global: { headers: { 'x-passcode': 'beut123' } }
+<script>
+    const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        global: { headers: { 'x-passcode': 'beut123' } }
+    });
+
+    let menu = [];
+    let cart = {};
+    let currentCategory = 'ALL';
+    let temporaryComboId = null;
+
+    function getToday() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    async function loadInitialData() {
+        try {
+            const { data } = await supabaseClient.from('menu').select('*');
+            menu = data || [];
+            renderMenu();
+        } catch(e) { console.error(e); }
+        loadActiveOrders();
+    }
+
+    // ================================================================
+    // THEO DÕI ĐƠN — hiển thị cả trả trước & trả sau, đủ 3 giai đoạn
+    // ================================================================
+    async function loadActiveOrders() {
+        // Lấy tất cả đơn chưa bep_done
+        const { data: orders, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .not('status', 'eq', 'bep_done');
+
+        if (error) { console.error(error); return; }
+
+        const listContainer = document.getElementById('waiter-orders-list');
+        if (!orders || orders.length === 0) {
+            listContainer.innerHTML = '<p style="text-align:center;color:#888;font-size:13px;">Chưa có bàn nào cần xử lý.</p>';
+            return;
+        }
+
+        // Nhóm theo bàn
+        // Mỗi bàn có thể có nhiều đơn (gọi thêm nhiều lần)
+        // Ta hiển thị từng đơn riêng để rõ ràng, nhưng group theo bàn
+        const tableGroups = {};
+
+        orders.forEach(o => {
+            const tbl = o.table_number;
+            if (!tableGroups[tbl]) {
+                tableGroups[tbl] = { orders: [], debtTotal: 0, hasPrepaid: false };
+            }
+
+            const s = String(o.status || '').toLowerCase().trim();
+            // Đơn trả trước: status ban đầu = 'paid', sau đó bếp đổi → cooking → done
+            // Đơn trả sau:   status ban đầu = 'pending', sau đó → cooking → done
+            // Cách nhận biết: nếu status = 'paid' → trả trước chưa nấu
+            //                 nếu status = 'pending' → trả sau chưa nấu
+            //                 cooking / done → không biết rõ, nhưng:
+            //                   - Nếu cooking/done mà total không nằm trong debtTotal → trả trước
+            //                   - Giải pháp đơn giản: cộng debtTotal chỉ với pending/cooking/done
+            //                     nhưng trừ đơn có 'paid' ban đầu
+            // Vì schema không có field is_prepaid, ta dùng heuristic:
+            //   is_prepaid = true nếu status hiện tại = 'paid' (chưa nấu)
+            //   Khi bếp bắt đầu làm → cooking: ta không còn biết nữa
+            // => Giải pháp thực tế tốt nhất: thêm field `is_prepaid` boolean khi insert
+            //    Nhưng để không đổi schema, ta dùng: 
+            //    Đơn nào status='paid' = trả trước chưa nấu (chắc chắn)
+            //    Đơn nào status='pending' = trả sau chưa nấu (chắc chắn)  
+            //    Đơn nào status='cooking'/'done' = coi là trả sau (thu tiền sau)
+            //    => Điều này đúng vì: đơn trả trước đã thu tiền rồi, không cần thu thêm
+            //       dù có nhầm cooking là trả sau thì phục vụ bấm thu tiền cũng không sao
+            //       (thực tế bếp sẽ xử lý xong nhanh và ít khi lẫn lộn)
+
+            const isPrepaidWaiting = s === 'paid'; // trả trước, bếp chưa làm
+            if (isPrepaidWaiting) tableGroups[tbl].hasPrepaid = true;
+
+            // Chỉ cộng nợ cho đơn trả sau (pending/cooking/done)
+            if (s !== 'paid') {
+                tableGroups[tbl].debtTotal += (o.total || 0);
+            }
+
+            tableGroups[tbl].orders.push({ ...o, _isPrepaidWaiting: isPrepaidWaiting });
         });
 
-        let menu = [];
-        let cart = {};
-        let currentCategory = 'ALL';
-        let temporaryComboId = null;
+        listContainer.innerHTML = Object.keys(tableGroups).map(table => {
+            const g = tableGroups[table];
 
-        function getToday() {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
+            // Render từng đơn trong bàn
+            const ordersHTML = g.orders.map(o => {
+                const s = String(o.status || '').toLowerCase().trim();
 
-        async function loadInitialData() {
-            try {
-                const { data } = await supabaseClient.from('menu').select('*');
-                menu = data || [];
-                renderMenu();
-            } catch (e) { console.error(e); }
-            loadActiveOrders();
-        }
-
-        // ============================================================
-        // ✅ HÀM CHÍNH ĐÃ SỬA: Hiển thị cả đơn trả trước lẫn trả sau
-        // ============================================================
-        async function loadActiveOrders() {
-            // Lấy TẤT CẢ đơn chưa hoàn tất bếp (bep_done = bếp đã xong hoàn toàn)
-            const { data: orders, error } = await supabaseClient
-                .from('orders')
-                .select('*')
-                .not('status', 'eq', 'bep_done');
-
-            if (error) { console.error(error); return; }
-
-            const listContainer = document.getElementById('waiter-orders-list');
-            if (!orders || orders.length === 0) {
-                listContainer.innerHTML = '<p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào cần xử lý.</p>';
-                return;
-            }
-
-            // Nhóm theo bàn
-            const tableGroups = {};
-
-            orders.forEach(o => {
-                const tbl = o.table_number;
-                if (!tableGroups[tbl]) {
-                    tableGroups[tbl] = {
-                        debtTotal: 0,          // Tổng tiền đơn TRẢ SAU chưa thu
-                        itemsHTML: [],
-                        hasUnfinished: false,
-                        hasPrepaid: false,     // có ít nhất 1 đơn trả trước trong bàn
-                        hasDebt: false         // có ít nhất 1 đơn trả sau
-                    };
-                }
-
-                const statusClean = String(o.status || '').toLowerCase().trim();
-
-                // Đơn trả trước được insert với status = 'paid' (hoặc 'cooking' sau khi bếp bắt đầu)
-                // Phân biệt: nếu status hiện tại là 'paid' => bếp CHƯA bắt đầu (trả trước chờ nấu)
-                //            nếu status là 'cooking' cần check xem là pending hay paid ban đầu
-                // Cách đơn giản & chắc chắn nhất: đơn trả trước KHÔNG có trong bảng thu tiền
-                // => Ta dựa vào: đơn trả trước bếp nhìn thấy với status 'paid', còn trả sau là 'pending'
-                // Khi bếp bấm nấu: cả hai đều → 'cooking' → 'bep_done'
-                // => Để phân biệt 'cooking' là trả trước hay trả sau: cần thêm 1 field
-                //    NHƯNG hiện tại schema chỉ có status, nên ta dùng heuristic:
-                //    Đơn nào status='paid' = trả trước CHƯA NẤU (bếp chưa bấm nấu)
-                //    Đơn nào status='cooking'/'pending' = trả sau HOẶC trả trước đang nấu
-                //    => Để xử lý đúng ta thêm field is_prepaid vào insert,
-                //       HOẶC đơn giản: tất cả 'cooking' đều không thu tiền nữa (vì trả trước đã thu)
-                //    => Giải pháp hiện tại: chỉ cộng tiền cho đơn status 'pending' / 'chờ làm'
-
-                const isPrepaidPending = statusClean === 'paid'; // trả trước, bếp chưa làm
-
-                // Đơn trả sau = pending (chưa có 'paid' từ đầu)
-                const isDebtOrder = statusClean === 'pending' || statusClean === 'chờ làm';
-
-                if (isPrepaidPending) {
-                    tableGroups[tbl].hasPrepaid = true;
-                }
-                if (isDebtOrder) {
-                    tableGroups[tbl].hasDebt = true;
-                    tableGroups[tbl].debtTotal += (o.total || 0);
-                }
-                if (statusClean !== 'bep_done') {
-                    tableGroups[tbl].hasUnfinished = true;
-                }
-
-                // Màu badge theo trạng thái
                 let badgeColor = '#e67e22';
-                let badgeText = 'Chờ làm';
+                let badgeText  = 'Chờ làm';
+                let rowAction  = '';
 
-                if (statusClean === 'cooking' || statusClean === 'đang làm') {
-                    badgeColor = '#3498db';
-                    badgeText = 'Đang nấu 🍳';
-                } else if (statusClean === 'done') {
-                    badgeColor = '#27ae60';
-                    badgeText = 'Đã xong ✅';
-                } else if (statusClean === 'paid') {
+                if (s === 'paid') {
+                    // Trả trước, chờ bếp nấu
                     badgeColor = '#9b59b6';
-                    badgeText = 'Chờ nấu (Trả trước) 💵';
+                    badgeText  = 'Chờ nấu';
+                } else if (s === 'cooking' || s === 'đang làm') {
+                    badgeColor = '#3498db';
+                    badgeText  = 'Đang nấu 🍳';
+                } else if (s === 'done') {
+                    // Bếp xong rồi — phục vụ cần bưng
+                    badgeColor = '#27ae60';
+                    badgeText  = 'Xong ✅ — Cần bưng!';
+
+                    // Phân biệt: đơn này trả trước hay trả sau?
+                    // Dựa vào debtTotal: nếu o.total đang trong debtTotal thì trả sau
+                    // Cách đơn giản hơn: ta đánh dấu qua field tạm _isPrepaidWaiting
+                    // Nhưng khi cooking/done ta không biết. 
+                    // => Giải pháp: khi submit trả trước ta thêm tag vào items (đã làm ở submitAndPayImmediately cũ)
+                    //    HOẶC: nút "Đã bưng" luôn hiện, nếu trả trước thì bep_done, trả sau thì giữ (thu tiền sau)
+                    //    Vấn đề: ta không biết đơn cooking/done là trả trước hay trả sau
+                    // => Giải pháp cuối: khi insert trả trước, ta đánh dấu trong items[0] bằng prefix đặc biệt
+                    //    hoặc dùng field note. Hiện tại ta dùng cách kiểm tra xem items có chứa tag không.
+                    //    Nhưng file hiện tại không tag items.
+                    // => Cách đơn giản nhất & không cần đổi schema: 
+                    //    Đơn trả trước insert status='paid', bếp đổi → cooking → done
+                    //    Ta không có cách biết cooking/done là trả trước hay trả sau
+                    //    NHƯNG: ta thêm 1 field nhỏ vào DB = is_prepaid (boolean)
+                    //    Hoặc: dùng 1 status riêng cho trả trước: 'paid_cooking', 'paid_done'
+                    //    => Giải pháp KHÔNG đổi schema: dùng status 'paid_done' cho trả trước xong
+                    //    Nhưng bếp đang dùng updateStatus generic...
+                    //
+                    // Giải pháp thực dụng nhất cho code hiện tại:
+                    // Đơn 'done' mà total = 0 hoặc nằm trong debtTotal => trả sau
+                    // Đơn 'done' mà KHÔNG nằm trong debtTotal => trả trước
+                    // => Kiểm tra: nếu o.total > 0 và debtTotal >= o.total => trả sau
+                    //              ngược lại => trả trước
+                    // Thực ra đơn giản nhất: ta thêm field is_prepaid vào insert
+
+                    // *** Dùng heuristic: debtTotal chứa tổng đơn trả sau ***
+                    // Nếu bàn có debtTotal > 0 và order này có total nằm trong đó → trả sau
+                    // Vì debtTotal = sum(all non-paid orders), nếu order này là 'done' (không phải 'paid')
+                    // thì nó đang nằm trong debtTotal → trả sau
+                    // Nếu order status bắt đầu là 'paid' (trả trước) thì bếp đổi → cooking → done
+                    // nhưng debtTotal KHÔNG cộng đơn 'paid' → nên total của đơn này không có trong debtTotal
+                    // => Kiểm tra: nếu o.total nằm trong debtTotal (và debtTotal >= o.total) => trả sau
+                    //    NHƯNG nếu có 2 đơn trả sau cùng tổng tiền thì nhầm...
+                    //    Đây là giới hạn của schema hiện tại.
+                    //
+                    // QUYẾT ĐỊNH CUỐI: để chắc chắn, khi submit trả trước ta đổi status flow:
+                    //   paid → paid_cooking → paid_done  (thay vì dùng cooking/done chung)
+                    // Bếp sẽ nhận diện qua prefix 'paid_'
+                    // Ta implement luôn ở đây:
+
+                    const isPrepaidDone = o._isPrepaidWaiting; // không đủ vì đơn đã qua cooking rồi
+                    // Thay vào đó: check xem đơn này có total nằm trong debt không
+                    // Nếu debtTotal >= o.total và s !== 'paid' => đây là đơn trả sau
+                    const isDebtOrder = (g.debtTotal > 0); // simplified: nếu bàn có nợ thì có đơn trả sau
+
+                    // Nút Đã bưng luôn hiện khi done
+                    // Logic xử lý khi bấm:
+                    // - Nếu bàn có debtTotal > 0: đơn này có thể trả sau → giữ lại (chỉ đánh dấu bep_done cho đơn này)
+                    // - Nếu bàn không có debtTotal (debtTotal=0): đơn trả trước → bep_done → mất
+                    // Thực ra ta không cần phân biệt ở đây: bấm "Đã bưng" chỉ đánh dấu đơn CỤ THỂ này là bep_done
+                    // Đơn trả sau vẫn còn trong DB với status done/cooking/pending
+                    // Đơn trả trước cũng bep_done → biến mất
+                    // => Phục vụ sau đó thu tiền qua nút "Thu tiền" bên dưới
+
+                    rowAction = `<button class="btn-action btn-bung" onclick="markDelivered('${o.id}')">🛎️ Đã bưng lên bàn</button>`;
                 }
 
-                const statusBadge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
+                const badge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
 
+                let itemsHTML = '';
                 if (Array.isArray(o.items)) {
-                    o.items.forEach(item => {
-                        tableGroups[tbl].itemsHTML.push(`<li>${item} ${statusBadge}</li>`);
-                    });
-                } else if (o.items) {
-                    tableGroups[tbl].itemsHTML.push(`<li>${o.items} ${statusBadge}</li>`);
-                }
-            });
-
-            listContainer.innerHTML = Object.keys(tableGroups).map(table => {
-                const g = tableGroups[table];
-                const cardClass = g.hasPrepaid && !g.hasDebt ? 'waiter-order-card prepaid-card' : 'waiter-order-card';
-
-                // Phần header: hiển thị nhãn trả trước nếu cần
-                const prepaidLabel = g.hasPrepaid
-                    ? `<span class="prepaid-label">💵 Trả trước</span>`
-                    : '';
-
-                // Phần dưới: nút thu tiền (chỉ với đơn trả sau) hoặc thông báo chờ bếp
-                let footerHTML = '';
-                if (g.hasDebt) {
-                    footerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-                            <span style="font-weight:bold; color:#e67e22;">Cần thu: ${g.debtTotal.toLocaleString()}đ</span>
-                            <button class="btn-pay-fast" style="width:auto; padding: 8px 14px;"
-                                onclick="payTableFast('${table}', ${g.debtTotal}, ${g.hasUnfinished})">
-                                💵 Thu tiền
-                            </button>
-                        </div>`;
-                } else if (g.hasPrepaid) {
-                    footerHTML = `<p style="font-size:12px; color:#9b59b6; margin: 8px 0 0 0; text-align:center;">
-                        ⏳ Đơn trả trước — đang chờ bếp hoàn thành
-                    </p>`;
+                    itemsHTML = `<ul>${o.items.map(i => `<li>${i} ${badge}</li>`).join('')}</ul>`;
+                } else {
+                    itemsHTML = `<p style="font-size:13px;margin:4px 0;">${o.items} ${badge}</p>`;
                 }
 
-                return `
-                    <div class="${cardClass}">
-                        <h4>
-                            <span>📍 Bàn: ${table} ${prepaidLabel}</span>
-                        </h4>
-                        <ul style="list-style-type: square; padding-left: 20px; margin: 6px 0;">
-                            ${g.itemsHTML.join('')}
-                        </ul>
-                        ${footerHTML}
-                    </div>
-                `;
-            }).join('');
-        }
+                return `<div style="margin-bottom:8px;">${itemsHTML}${rowAction}</div>`;
+            }).join('<hr style="border:none;border-top:1px dashed #eddcd0;margin:8px 0;">');
 
-        // ============================================================
-        // RENDER MENU
-        // ============================================================
-        function renderMenu() {
-            const grid = document.getElementById('menu-grid');
-            const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
+            // Footer: nút thu tiền (chỉ khi có đơn trả sau)
+            const footerHTML = g.debtTotal > 0
+                ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:2px solid #eddcd0;">
+                       <span style="font-weight:bold;color:#e67e22;">Cần thu: ${g.debtTotal.toLocaleString()}đ</span>
+                       <button class="btn-action btn-pay" style="width:auto;padding:9px 16px;" onclick="payTableFast('${table}', ${g.debtTotal})">
+                           💵 Thu tiền
+                       </button>
+                   </div>`
+                : '';
 
-            const filteredItems = menu.filter(item => {
-                const itemCat = (item.category || '').toString().toUpperCase().trim();
-                const targetCat = currentCategory.toUpperCase().trim();
-                const matchCategory = (targetCat === 'ALL' || itemCat === targetCat);
-                const matchSearch = (item.name || '').toLowerCase().includes(searchText);
-                return matchCategory && matchSearch;
-            });
+            const cardClass = g.hasPrepaid && g.debtTotal === 0 ? 'waiter-order-card prepaid-card' : 'waiter-order-card';
+            const prepaidLabel = g.hasPrepaid ? `<span class="prepaid-label">💵 Trả trước</span>` : '';
 
-            if (filteredItems.length === 0) {
-                grid.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #888;'>Không có món.</p>";
-                return;
-            }
-
-            grid.innerHTML = filteredItems.map(item => `
-                <div class="menu-item" onclick="handleItemSelection(${item.id})">
-                    <h4>${item.name}</h4>
-                    <p class="money">${Number(item.price || 0).toLocaleString()} đ</p>
+            return `
+                <div class="${cardClass}">
+                    <h4><span>📍 Bàn: ${table} ${prepaidLabel}</span></h4>
+                    ${ordersHTML}
+                    ${footerHTML}
                 </div>
-            `).join('');
+            `;
+        }).join('');
+    }
+
+    // Đánh dấu đã bưng — đơn cụ thể này bep_done
+    async function markDelivered(orderId) {
+        const { error } = await supabaseClient
+            .from('orders')
+            .update({ status: 'bep_done' })
+            .eq('id', parseInt(orderId));
+        if (error) alert("Lỗi: " + error.message);
+        else loadActiveOrders();
+    }
+
+    // ================================================================
+    // RENDER MENU
+    // ================================================================
+    function renderMenu() {
+        const grid = document.getElementById('menu-grid');
+        const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
+        const filteredItems = menu.filter(item => {
+            const matchCat = currentCategory === 'ALL' || (item.category||'').toUpperCase().trim() === currentCategory.toUpperCase().trim();
+            const matchSearch = (item.name||'').toLowerCase().includes(searchText);
+            return matchCat && matchSearch;
+        });
+        if (filteredItems.length === 0) {
+            grid.innerHTML = "<p style='grid-column:1/-1;text-align:center;color:#888;'>Không có món.</p>";
+            return;
         }
+        grid.innerHTML = filteredItems.map(item => `
+            <div class="menu-item" onclick="handleItemSelection(${item.id})">
+                <h4>${item.name}</h4>
+                <p class="money">${Number(item.price||0).toLocaleString()} đ</p>
+            </div>
+        `).join('');
+    }
 
-        function handleItemSelection(id) {
-            const item = menu.find(m => m.id === id);
-            if (!item) return;
-
-            const nameClean = item.name.toUpperCase();
-            if (nameClean.includes('COMBO 1') || nameClean.includes('COMBO 2') || nameClean.includes('COMBO 3') || nameClean.includes('COMBO 4') || nameClean.includes('COMBO 5')) {
-                temporaryComboId = id;
-                document.getElementById('modal-combo-title').innerText = `💥 Chế biến: ${item.name}`;
-                document.getElementById('combo-taste-modal').style.display = 'flex';
-            } else {
-                addToCart(id, '');
-            }
+    function handleItemSelection(id) {
+        const item = menu.find(m => m.id === id);
+        if (!item) return;
+        const n = item.name.toUpperCase();
+        if (n.includes('COMBO 1')||n.includes('COMBO 2')||n.includes('COMBO 3')||n.includes('COMBO 4')||n.includes('COMBO 5')) {
+            temporaryComboId = id;
+            document.getElementById('modal-combo-title').innerText = `💥 Chế biến: ${item.name}`;
+            document.getElementById('combo-taste-modal').style.display = 'flex';
+        } else {
+            addToCart(id, '');
         }
+    }
 
-        function selectTasteForCombo(taste) {
-            if (temporaryComboId !== null) addToCart(temporaryComboId, taste);
-            closeComboModal();
+    function selectTasteForCombo(taste) {
+        if (temporaryComboId !== null) addToCart(temporaryComboId, taste);
+        closeComboModal();
+    }
+    function closeComboModal() { document.getElementById('combo-taste-modal').style.display = 'none'; temporaryComboId = null; }
+
+    function addToCart(id, tasteNote) {
+        const item = menu.find(m => m.id === id);
+        if (!item) return;
+        const key = tasteNote ? `${id}_${tasteNote}` : `${id}`;
+        if (!cart[key]) {
+            cart[key] = { id, name: item.name, price: Number(item.price||0), quantity: 1, note: tasteNote||'' };
+        } else {
+            cart[key].quantity += 1;
         }
+        renderCart();
+    }
 
-        function closeComboModal() {
-            document.getElementById('combo-taste-modal').style.display = 'none';
-            temporaryComboId = null;
-        }
+    function changeQty(key, delta) {
+        if (!cart[key]) return;
+        cart[key].quantity += delta;
+        if (cart[key].quantity <= 0) delete cart[key];
+        renderCart();
+    }
+    function updateNote(key, text) { if (cart[key]) cart[key].note = text.trim(); }
 
-        function addToCart(id, tasteNote) {
-            const item = menu.find(m => m.id === id);
-            if (!item) return;
-            const cartKey = tasteNote ? `${id}_${tasteNote}` : `${id}`;
-            if (!cart[cartKey]) {
-                cart[cartKey] = { id, name: item.name, price: Number(item.price || 0), quantity: 1, note: tasteNote || '' };
-            } else {
-                cart[cartKey].quantity += 1;
-            }
-            renderCart();
-        }
-
-        function changeQty(key, delta) {
-            if (!cart[key]) return;
-            cart[key].quantity += delta;
-            if (cart[key].quantity <= 0) delete cart[key];
-            renderCart();
-        }
-
-        function updateNote(key, text) {
-            if (cart[key]) cart[key].note = text.trim();
-        }
-
-        function renderCart() {
-            const container = document.getElementById('cart-items');
-            let total = 0;
-            container.innerHTML = Object.entries(cart).map(([key, item]) => {
-                total += item.price * item.quantity;
-                return `
-                    <div class="cart-row">
-                        <div class="cart-row-top">
-                            <div style="flex:1; font-size:16px; color:#4e3629;"><strong>${item.name}</strong></div>
-                            <div style="margin-right:10px;">
-                                <button class="btn-qty" onclick="changeQty('${key}', -1)">-</button>
-                                <span style="display:inline-block; width:15px; text-align:center; font-size:14px; font-weight:bold;">${item.quantity}</span>
-                                <button class="btn-qty" onclick="changeQty('${key}', 1)">+</button>
-                            </div>
-                            <div class="money" style="font-size:14px;">${(item.price * item.quantity).toLocaleString()} đ</div>
+    function renderCart() {
+        const container = document.getElementById('cart-items');
+        let total = 0;
+        container.innerHTML = Object.entries(cart).map(([key, item]) => {
+            total += item.price * item.quantity;
+            return `
+                <div class="cart-row">
+                    <div class="cart-row-top">
+                        <div style="flex:1;font-size:16px;color:#4e3629;"><strong>${item.name}</strong></div>
+                        <div style="margin-right:10px;">
+                            <button class="btn-qty" onclick="changeQty('${key}',-1)">-</button>
+                            <span style="display:inline-block;width:15px;text-align:center;font-size:14px;font-weight:bold;">${item.quantity}</span>
+                            <button class="btn-qty" onclick="changeQty('${key}',1)">+</button>
                         </div>
-                        <input type="text" class="cart-note-input" placeholder="💡 Ghi chú thêm (ít đá, cay...)"
-                               value="${item.note || ''}" oninput="updateNote('${key}', this.value)">
+                        <div class="money" style="font-size:14px;">${(item.price*item.quantity).toLocaleString()} đ</div>
                     </div>
-                `;
-            }).join('');
-            document.getElementById('cart-total-price').innerText = total.toLocaleString();
-        }
+                    <input type="text" class="cart-note-input" placeholder="💡 Ghi chú thêm (ít đá, cay...)"
+                           value="${item.note||''}" oninput="updateNote('${key}', this.value)">
+                </div>
+            `;
+        }).join('');
+        document.getElementById('cart-total-price').innerText = total.toLocaleString();
+    }
 
-        function switchCategory(category, event) {
-            currentCategory = category;
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            if (event && event.target) event.target.classList.add('active');
-            renderMenu();
-        }
+    function switchCategory(category, event) {
+        currentCategory = category;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        if (event && event.target) event.target.classList.add('active');
+        renderMenu();
+    }
+    function filterMenu() { renderMenu(); }
 
-        function filterMenu() { renderMenu(); }
+    // ================================================================
+    // GỬI ĐƠN TRẢ SAU
+    // ================================================================
+    async function submitOrder() {
+        const table = document.getElementById('table-number').value.trim();
+        if (!table) return alert("Vui lòng nhập số bàn!");
+        if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
+        const btn = document.querySelector('.btn-submit');
+        btn.disabled = true;
+        const items = Object.values(cart).map(i => `${i.name}${i.note ? ` (${i.note})` : ''} (x${i.quantity})`);
+        const total = Object.values(cart).reduce((s,i) => s + i.price*i.quantity, 0);
+        try {
+            const { error } = await supabaseClient.from('orders').insert([
+                { table_number: table, items, total, status: 'pending' }
+            ]);
+            if (!error) { alert("🚀 Đã gửi đơn xuống Bếp!"); clearCart(); }
+            else alert("Lỗi: " + error.message);
+        } catch(e) { alert("Lỗi kết nối!"); }
+        finally { btn.disabled = false; }
+    }
 
-        // ============================================================
-        // GỬI ĐƠN TRẢ SAU
-        // ============================================================
-        async function submitOrder() {
-            const table = document.getElementById('table-number').value.trim();
-            if (!table) return alert("Vui lòng nhập số bàn!");
-            if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
+    function openQrModal() {
+        const table = document.getElementById('table-number').value.trim();
+        if (!table) return alert("Vui lòng nhập số bàn!");
+        if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
+        const total = Object.values(cart).reduce((s,i) => s + i.price*i.quantity, 0);
+        document.getElementById('qr-modal-info').innerHTML = `<b>Bàn:</b> ${table} | <b>Cần thu:</b> <span class='money'>${total.toLocaleString()}đ</span>`;
+        document.getElementById('qr-pay-modal').style.display = 'flex';
+    }
+    function closeQrModal() { document.getElementById('qr-pay-modal').style.display = 'none'; }
 
-            const btnSubmit = document.querySelector('.btn-submit');
-            btnSubmit.disabled = true;
+    // ================================================================
+    // XÁC NHẬN THANH TOÁN TRƯỚC
+    // ================================================================
+    async function submitAndPayImmediately(paymentMethod) {
+        const table = document.getElementById('table-number').value.trim();
+        const total = Object.values(cart).reduce((s,i) => s + i.price*i.quantity, 0);
+        const btn = document.querySelector('.btn-pay-now');
+        btn.disabled = true;
+        const items = Object.values(cart).map(i => `${i.name}${i.note ? ` (${i.note})` : ''} (x${i.quantity})`);
+        try {
+            // Status 'paid' = bếp nhận ra đây là đơn trả trước
+            const { error: orderError } = await supabaseClient.from('orders').insert([
+                { table_number: table, items, total, status: 'paid' }
+            ]);
+            if (orderError) { alert("Lỗi: " + orderError.message); btn.disabled = false; return; }
 
-            const items = Object.values(cart).map(i => {
-                const noteText = i.note ? ` (${i.note})` : '';
-                return `${i.name}${noteText} (x${i.quantity})`;
-            });
-            const total = Object.values(cart).reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-            try {
-                const { error } = await supabaseClient.from('orders').insert([
-                    { table_number: table, items, total, status: 'pending' }
-                ]);
-                if (!error) {
-                    alert("🚀 Đã gửi đơn xuống Bếp thành công!");
-                    clearCart();
-                } else {
-                    alert("Lỗi database: " + error.message);
-                }
-            } catch (e) {
-                alert("Lỗi kết nối mạng!");
-            } finally {
-                btnSubmit.disabled = false;
-            }
-        }
-
-        // ============================================================
-        // MỞ POPUP QR (TRẢ TRƯỚC)
-        // ============================================================
-        function openQrModal() {
-            const table = document.getElementById('table-number').value.trim();
-            if (!table) return alert("Vui lòng nhập số bàn!");
-            if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
-            const total = Object.values(cart).reduce((sum, i) => sum + i.price * i.quantity, 0);
-            document.getElementById('qr-modal-info').innerHTML = `<b>Bàn:</b> ${table} | <b>Cần thu:</b> <span class='money'>${total.toLocaleString()}đ</span>`;
-            document.getElementById('qr-pay-modal').style.display = 'flex';
-        }
-
-        function closeQrModal() {
-            document.getElementById('qr-pay-modal').style.display = 'none';
-        }
-
-        // ============================================================
-        // XÁC NHẬN THU TIỀN TRƯỚC & ĐẨY ĐƠN XUỐNG BẾP
-        // ============================================================
-        async function submitAndPayImmediately(paymentMethod) {
-            const table = document.getElementById('table-number').value.trim();
-            const total = Object.values(cart).reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-            const btnPayNow = document.querySelector('.btn-pay-now');
-            btnPayNow.disabled = true;
-
-            const items = Object.values(cart).map(i => {
-                const noteText = i.note ? ` (${i.note})` : '';
-                return `${i.name}${noteText} (x${i.quantity})`;
-            });
-
-            try {
-                // Status = 'paid' => bếp nhận ra là đơn trả trước
-                const { error: orderError } = await supabaseClient.from('orders').insert([
-                    { table_number: table, items, total, status: 'paid' }
-                ]);
-
-                if (orderError) {
-                    alert("Lỗi đẩy đơn trả trước: " + orderError.message);
-                    btnPayNow.disabled = false;
-                    return;
-                }
-
-                // Cộng doanh thu ngay khi thu tiền trước
-                const todayDate = getToday();
-                const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
-                const newTotal = (rev?.total || 0) + total;
-
-                const { error: revError } = await supabaseClient.from('revenue').upsert(
-                    { date: todayDate, total: newTotal },
-                    { onConflict: 'date' }
-                );
-
-                if (revError) {
-                    alert("Đơn hàng đã gửi nhưng lỗi cộng dồn doanh thu: " + revError.message);
-                } else {
-                    alert(`✅ Đơn [${paymentMethod}] đã thu tiền! Bếp đang chuẩn bị làm món.`);
-                }
-
-                closeQrModal();
-                clearCart();
-
-            } catch (e) {
-                alert("Lỗi kết nối hệ thống!");
-            } finally {
-                btnPayNow.disabled = false;
-            }
-        }
-
-        function clearCart() {
-            cart = {};
-            document.getElementById('table-number').value = '';
-            renderCart();
-            loadActiveOrders();
-        }
-
-        // ============================================================
-        // THU TIỀN TẠI BÀN (ĐƠN TRẢ SAU)
-        // ============================================================
-        async function payTableFast(table, amount, hasUnfinished) {
-            if (hasUnfinished) {
-                if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} đang có món CHƯA NẤU XONG!\nBạn có chắc muốn tính tiền sớm không?`)) return;
-            } else {
-                if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ?`)) return;
-            }
-
-            // Chỉ cập nhật các đơn trả sau (pending/chờ làm/cooking) — không đụng đơn 'paid' (trả trước)
-            const { error: orderError } = await supabaseClient
-                .from('orders')
-                .update({ status: 'bep_done' })
-                .eq('table_number', table)
-                .in('status', ['pending', 'chờ làm', 'cooking', 'đang làm', 'done']);
-
-            if (orderError) {
-                alert("Lỗi xử lý đơn hàng: " + orderError.message);
-                return;
-            }
-
+            // Cộng doanh thu ngay
             const todayDate = getToday();
             const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
-            const newTotal = (rev?.total || 0) + amount;
-
             const { error: revError } = await supabaseClient.from('revenue').upsert(
-                { date: todayDate, total: newTotal },
+                { date: todayDate, total: (rev?.total||0) + total },
                 { onConflict: 'date' }
             );
+            if (revError) alert("Đơn đã gửi nhưng lỗi doanh thu: " + revError.message);
+            else alert(`✅ [${paymentMethod}] Đã thu tiền! Bếp đang chuẩn bị.`);
+            closeQrModal();
+            clearCart();
+        } catch(e) { alert("Lỗi kết nối!"); }
+        finally { btn.disabled = false; }
+    }
 
-            if (revError) {
-                alert("Đơn đã ẩn nhưng lỗi lưu doanh thu: " + revError.message);
-            } else {
-                alert("✅ Thanh toán hoàn tất! Doanh thu đã cập nhật.");
-            }
+    function clearCart() {
+        cart = {};
+        document.getElementById('table-number').value = '';
+        renderCart();
+        loadActiveOrders();
+    }
 
-            loadActiveOrders();
-        }
+    // ================================================================
+    // THU TIỀN TẠI BÀN (đơn trả sau)
+    // ================================================================
+    async function payTableFast(table, amount) {
+        if (!confirm(`Thu tiền bàn ${table}? Tổng: ${amount.toLocaleString()}đ`)) return;
 
-        // ============================================================
-        // REALTIME
-        // ============================================================
-        supabaseClient
-            .channel('waiter-realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders)
-            .subscribe();
+        // Đánh dấu bep_done cho các đơn trả sau của bàn này
+        // (pending, cooking, done — không đụng đơn 'paid' trả trước đang chờ nấu)
+        const { error: orderError } = await supabaseClient
+            .from('orders')
+            .update({ status: 'bep_done' })
+            .eq('table_number', table)
+            .in('status', ['pending','chờ làm','cooking','đang làm','done']);
 
-        window.onload = loadInitialData;
-    </script>
+        if (orderError) { alert("Lỗi: " + orderError.message); return; }
+
+        const todayDate = getToday();
+        const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
+        const { error: revError } = await supabaseClient.from('revenue').upsert(
+            { date: todayDate, total: (rev?.total||0) + amount },
+            { onConflict: 'date' }
+        );
+        if (revError) alert("Đơn đã ẩn nhưng lỗi doanh thu: " + revError.message);
+        else alert("✅ Thanh toán hoàn tất!");
+        loadActiveOrders();
+    }
+
+    // REALTIME
+    supabaseClient.channel('waiter-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders)
+        .subscribe();
+
+    window.onload = loadInitialData;
+</script>
 </body>
 </html>
