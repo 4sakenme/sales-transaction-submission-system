@@ -573,9 +573,9 @@
             const btnPayNow = document.querySelector('.btn-pay-now');
             btnPayNow.disabled = true;
 
-            let methodLabel = "⚠️[ĐÃ CHUYỂN KHOẢN]";
+            let methodLabel = " ";
             if (paymentMethod === "TIỀN MẶT") {
-                methodLabel = "⚠️[TIỀN MẶT]";
+                methodLabel = " ";
             }
 
             const items = Object.values(cart).map(i => {
