@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📱 Phục vụ - Gọi món nhanh</title>
-    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* 🎨 HỆ THỐNG CSS LAYOUT CHUYÊN NGHIỆP */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #fcf8f5;
@@ -25,7 +23,7 @@
             position: relative;
         }
         header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
-        
+
         .btn-back {
             position: absolute;
             left: 20px;
@@ -95,7 +93,7 @@
             display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px;
         }
         .category-tabs::-webkit-scrollbar { display: none; }
-        
+
         .tab-btn {
             background: #e0d7cf; border: none; padding: 10px 18px; border-radius: 20px;
             font-weight: bold; color: #4e3629; cursor: pointer; white-space: nowrap; font-size: 13px;
@@ -142,8 +140,7 @@
         .cart-note-input:focus { border-color: #e7a460; background: #fff; }
 
         .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        
-        /* ĐỒNG BỘ 2 NÚT BẤM GỬI ĐƠN / THÀNH TOÁN TRƯỚC */
+
         .btn-submit { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
         .btn-pay-now { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; }
@@ -158,9 +155,23 @@
             border-radius: 10px;
             margin-bottom: 12px;
         }
-        .waiter-order-card h4 { margin: 0 0 6px 0; color: #333; display: flex; justify-content: space-between; }
+        /* Đơn trả trước: viền tím */
+        .waiter-order-card.prepaid-card {
+            border-left-color: #9b59b6;
+            background: #fdf9ff;
+        }
+        .waiter-order-card h4 { margin: 0 0 6px 0; color: #333; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
         .waiter-order-card ul { margin: 5px 0; padding-left: 18px; font-size: 13px; color: #555; }
-        
+
+        .prepaid-label {
+            font-size: 11px;
+            background: #9b59b6;
+            color: white;
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
         .btn-pay-fast {
             width: 100%;
             background: #27ae60;
@@ -173,6 +184,7 @@
             margin-top: 8px;
             font-size: 13px;
         }
+
         .item-status-badge {
             font-size: 11px;
             padding: 1px 5px;
@@ -183,21 +195,21 @@
             display: inline-block;
         }
 
-        /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT & POPUP QR */
+        /* POPUP COMBO & QR */
         .combo-modal {
-            display: none; 
-            position: fixed; 
-            z-index: 2000; 
-            left: 0; top: 0; 
-            width: 100%; height: 100%; 
-            background-color: rgba(0,0,0,0.5); 
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
             align-items: center; justify-content: center;
         }
         .combo-modal-content {
-            background-color: white; 
-            padding: 25px; 
-            border-radius: 16px; 
-            width: 85%; max-width: 340px; 
+            background-color: white;
+            padding: 25px;
+            border-radius: 16px;
+            width: 85%; max-width: 340px;
             text-align: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             animation: popupScale 0.25s ease-out;
@@ -217,7 +229,6 @@
         .btn-taste.sauce:hover { background: #e67e22; color: white; }
         .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
 
-        /* 🔥 ĐÃ SỬA: Ảnh QR siêu bự, tự co giãn mượt mà trên điện thoại nhỏ */
         .qr-image {
             width: 100%;
             max-width: 520px;
@@ -248,7 +259,7 @@
         <section class="menu-section">
             <h2>Danh sách món</h2>
             <input type="text" id="search-bar" placeholder="🔍 Tìm món nhanh..." oninput="filterMenu()">
-            
+
             <div class="category-tabs">
                 <button class="tab-btn active" onclick="switchCategory('ALL', event)">✨ Tất cả</button>
                 <button class="tab-btn" onclick="switchCategory('TRÀ', event)">🍵 Trà</button>
@@ -291,6 +302,7 @@
         </div>
     </main>
 
+    <!-- POPUP CHỌN VỊ COMBO -->
     <div id="combo-taste-modal" class="combo-modal">
         <div class="combo-modal-content">
             <h3 id="modal-combo-title">Chọn cách chế biến Combo</h3>
@@ -302,24 +314,25 @@
         </div>
     </div>
 
+    <!-- POPUP QR THANH TOÁN TRƯỚC -->
     <div id="qr-pay-modal" class="combo-modal">
         <div class="combo-modal-content" style="max-width: 600px; width: 90%;">
             <h3 style="color: #27ae60; margin-bottom: 5px;">Thu Tiền Trả Trước</h3>
             <p id="qr-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
-            
+
             <img id="qr-pay-img" src="2aOboQdQDRATgIqvbsDnMV5cBZLITs3W1FwJspiC.jpg" alt="Mã QR Quán" class="qr-image">
-            
+
             <button class="btn-confirm-pay" onclick="submitAndPayImmediately('CHUYỂN KHOẢN')">✅ Khách đã quét - Xác nhận CK</button>
             <button class="btn-cash-pay" onclick="submitAndPayImmediately('TIỀN MẶT')">💵 Khách trả TIỀN MẶT - Xác nhận</button>
-            
+
             <button class="btn-close-modal" onclick="closeQrModal()">Đóng cửa sổ</button>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
+        const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
-        
+
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': 'beut123' } }
         });
@@ -340,12 +353,19 @@
                 menu = data || [];
                 renderMenu();
             } catch (e) { console.error(e); }
-
             loadActiveOrders();
         }
 
+        // ============================================================
+        // ✅ HÀM CHÍNH ĐÃ SỬA: Hiển thị cả đơn trả trước lẫn trả sau
+        // ============================================================
         async function loadActiveOrders() {
-            const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid');
+            // Lấy TẤT CẢ đơn chưa hoàn tất bếp (bep_done = bếp đã xong hoàn toàn)
+            const { data: orders, error } = await supabaseClient
+                .from('orders')
+                .select('*')
+                .not('status', 'eq', 'bep_done');
+
             if (error) { console.error(error); return; }
 
             const listContainer = document.getElementById('waiter-orders-list');
@@ -354,52 +374,122 @@
                 return;
             }
 
+            // Nhóm theo bàn
             const tableGroups = {};
+
             orders.forEach(o => {
-                if (!tableGroups[o.table_number]) {
-                    tableGroups[o.table_number] = { total: 0, itemsWithStatus: [], hasUnfinished: false };
-                }
-                tableGroups[o.table_number].total += (o.total || 0);
-                
-                if (o.status !== 'done') {
-                    tableGroups[o.table_number].hasUnfinished = true;
+                const tbl = o.table_number;
+                if (!tableGroups[tbl]) {
+                    tableGroups[tbl] = {
+                        debtTotal: 0,          // Tổng tiền đơn TRẢ SAU chưa thu
+                        itemsHTML: [],
+                        hasUnfinished: false,
+                        hasPrepaid: false,     // có ít nhất 1 đơn trả trước trong bàn
+                        hasDebt: false         // có ít nhất 1 đơn trả sau
+                    };
                 }
 
-                let badgeColor = '#e67e22'; 
+                const statusClean = String(o.status || '').toLowerCase().trim();
+
+                // Đơn trả trước được insert với status = 'paid' (hoặc 'cooking' sau khi bếp bắt đầu)
+                // Phân biệt: nếu status hiện tại là 'paid' => bếp CHƯA bắt đầu (trả trước chờ nấu)
+                //            nếu status là 'cooking' cần check xem là pending hay paid ban đầu
+                // Cách đơn giản & chắc chắn nhất: đơn trả trước KHÔNG có trong bảng thu tiền
+                // => Ta dựa vào: đơn trả trước bếp nhìn thấy với status 'paid', còn trả sau là 'pending'
+                // Khi bếp bấm nấu: cả hai đều → 'cooking' → 'bep_done'
+                // => Để phân biệt 'cooking' là trả trước hay trả sau: cần thêm 1 field
+                //    NHƯNG hiện tại schema chỉ có status, nên ta dùng heuristic:
+                //    Đơn nào status='paid' = trả trước CHƯA NẤU (bếp chưa bấm nấu)
+                //    Đơn nào status='cooking'/'pending' = trả sau HOẶC trả trước đang nấu
+                //    => Để xử lý đúng ta thêm field is_prepaid vào insert,
+                //       HOẶC đơn giản: tất cả 'cooking' đều không thu tiền nữa (vì trả trước đã thu)
+                //    => Giải pháp hiện tại: chỉ cộng tiền cho đơn status 'pending' / 'chờ làm'
+
+                const isPrepaidPending = statusClean === 'paid'; // trả trước, bếp chưa làm
+
+                // Đơn trả sau = pending (chưa có 'paid' từ đầu)
+                const isDebtOrder = statusClean === 'pending' || statusClean === 'chờ làm';
+
+                if (isPrepaidPending) {
+                    tableGroups[tbl].hasPrepaid = true;
+                }
+                if (isDebtOrder) {
+                    tableGroups[tbl].hasDebt = true;
+                    tableGroups[tbl].debtTotal += (o.total || 0);
+                }
+                if (statusClean !== 'bep_done') {
+                    tableGroups[tbl].hasUnfinished = true;
+                }
+
+                // Màu badge theo trạng thái
+                let badgeColor = '#e67e22';
                 let badgeText = 'Chờ làm';
-                if (o.status === 'cooking') { badgeColor = '#e7a460'; badgeText = 'Đang nấu'; }
-                if (o.status === 'done') { badgeColor = '#27ae60'; badgeText = 'Đã xong'; }
+
+                if (statusClean === 'cooking' || statusClean === 'đang làm') {
+                    badgeColor = '#3498db';
+                    badgeText = 'Đang nấu 🍳';
+                } else if (statusClean === 'done') {
+                    badgeColor = '#27ae60';
+                    badgeText = 'Đã xong ✅';
+                } else if (statusClean === 'paid') {
+                    badgeColor = '#9b59b6';
+                    badgeText = 'Chờ nấu (Trả trước) 💵';
+                }
 
                 const statusBadge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
 
                 if (Array.isArray(o.items)) {
                     o.items.forEach(item => {
-                        tableGroups[o.table_number].itemsWithStatus.push(`<li>${item} ${statusBadge}</li>`);
+                        tableGroups[tbl].itemsHTML.push(`<li>${item} ${statusBadge}</li>`);
                     });
                 } else if (o.items) {
-                    tableGroups[o.table_number].itemsWithStatus.push(`<li>${o.items} ${statusBadge}</li>`);
+                    tableGroups[tbl].itemsHTML.push(`<li>${o.items} ${statusBadge}</li>`);
                 }
             });
 
             listContainer.innerHTML = Object.keys(tableGroups).map(table => {
-                const group = tableGroups[table];
+                const g = tableGroups[table];
+                const cardClass = g.hasPrepaid && !g.hasDebt ? 'waiter-order-card prepaid-card' : 'waiter-order-card';
+
+                // Phần header: hiển thị nhãn trả trước nếu cần
+                const prepaidLabel = g.hasPrepaid
+                    ? `<span class="prepaid-label">💵 Trả trước</span>`
+                    : '';
+
+                // Phần dưới: nút thu tiền (chỉ với đơn trả sau) hoặc thông báo chờ bếp
+                let footerHTML = '';
+                if (g.hasDebt) {
+                    footerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                            <span style="font-weight:bold; color:#e67e22;">Cần thu: ${g.debtTotal.toLocaleString()}đ</span>
+                            <button class="btn-pay-fast" style="width:auto; padding: 8px 14px;"
+                                onclick="payTableFast('${table}', ${g.debtTotal}, ${g.hasUnfinished})">
+                                💵 Thu tiền
+                            </button>
+                        </div>`;
+                } else if (g.hasPrepaid) {
+                    footerHTML = `<p style="font-size:12px; color:#9b59b6; margin: 8px 0 0 0; text-align:center;">
+                        ⏳ Đơn trả trước — đang chờ bếp hoàn thành
+                    </p>`;
+                }
+
                 return `
-                    <div class="waiter-order-card">
+                    <div class="${cardClass}">
                         <h4>
-                            <span>📍 Bàn: ${table}</span>
-                            <span class="money">${group.total.toLocaleString()}đ</span>
+                            <span>📍 Bàn: ${table} ${prepaidLabel}</span>
                         </h4>
-                        <ul style="list-style-type: square; padding-left: 20px;">
-                            ${group.itemsWithStatus.join('')}
+                        <ul style="list-style-type: square; padding-left: 20px; margin: 6px 0;">
+                            ${g.itemsHTML.join('')}
                         </ul>
-                        <button class="btn-pay-fast" onclick="payTableFast('${table}', ${group.total}, ${group.hasUnfinished})">
-                            💵 Thu tiền tại bàn
-                        </button>
+                        ${footerHTML}
                     </div>
                 `;
             }).join('');
         }
 
+        // ============================================================
+        // RENDER MENU
+        // ============================================================
         function renderMenu() {
             const grid = document.getElementById('menu-grid');
             const searchText = document.getElementById('search-bar').value.toLowerCase().trim();
@@ -407,7 +497,6 @@
             const filteredItems = menu.filter(item => {
                 const itemCat = (item.category || '').toString().toUpperCase().trim();
                 const targetCat = currentCategory.toUpperCase().trim();
-                
                 const matchCategory = (targetCat === 'ALL' || itemCat === targetCat);
                 const matchSearch = (item.name || '').toLowerCase().includes(searchText);
                 return matchCategory && matchSearch;
@@ -441,9 +530,7 @@
         }
 
         function selectTasteForCombo(taste) {
-            if (temporaryComboId !== null) {
-                addToCart(temporaryComboId, taste);
-            }
+            if (temporaryComboId !== null) addToCart(temporaryComboId, taste);
             closeComboModal();
         }
 
@@ -455,17 +542,9 @@
         function addToCart(id, tasteNote) {
             const item = menu.find(m => m.id === id);
             if (!item) return;
-
             const cartKey = tasteNote ? `${id}_${tasteNote}` : `${id}`;
-
             if (!cart[cartKey]) {
-                cart[cartKey] = { 
-                    id: id, 
-                    name: item.name, 
-                    price: Number(item.price || 0), 
-                    quantity: 1, 
-                    note: tasteNote ? tasteNote : '' 
-                };
+                cart[cartKey] = { id, name: item.name, price: Number(item.price || 0), quantity: 1, note: tasteNote || '' };
             } else {
                 cart[cartKey].quantity += 1;
             }
@@ -486,7 +565,6 @@
         function renderCart() {
             const container = document.getElementById('cart-items');
             let total = 0;
-            
             container.innerHTML = Object.entries(cart).map(([key, item]) => {
                 total += item.price * item.quantity;
                 return `
@@ -500,7 +578,7 @@
                             </div>
                             <div class="money" style="font-size:14px;">${(item.price * item.quantity).toLocaleString()} đ</div>
                         </div>
-                        <input type="text" class="cart-note-input" placeholder="💡 Ghi chú thêm (ít đá, cay...)" 
+                        <input type="text" class="cart-note-input" placeholder="💡 Ghi chú thêm (ít đá, cay...)"
                                value="${item.note || ''}" oninput="updateNote('${key}', this.value)">
                     </div>
                 `;
@@ -510,14 +588,16 @@
 
         function switchCategory(category, event) {
             currentCategory = category;
-            const buttons = document.querySelectorAll('.tab-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            if(event && event.target) event.target.classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
             renderMenu();
         }
 
         function filterMenu() { renderMenu(); }
 
+        // ============================================================
+        // GỬI ĐƠN TRẢ SAU
+        // ============================================================
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
@@ -530,34 +610,33 @@
                 const noteText = i.note ? ` (${i.note})` : '';
                 return `${i.name}${noteText} (x${i.quantity})`;
             });
-            
-            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
+            const total = Object.values(cart).reduce((sum, i) => sum + i.price * i.quantity, 0);
 
             try {
                 const { error } = await supabaseClient.from('orders').insert([
-                    { table_number: table, items: items, total: total, status: 'pending' }
+                    { table_number: table, items, total, status: 'pending' }
                 ]);
-
                 if (!error) {
                     alert("🚀 Đã gửi đơn xuống Bếp thành công!");
                     clearCart();
                 } else {
                     alert("Lỗi database: " + error.message);
                 }
-            } catch (error) {
+            } catch (e) {
                 alert("Lỗi kết nối mạng!");
             } finally {
                 btnSubmit.disabled = false;
             }
         }
 
+        // ============================================================
+        // MỞ POPUP QR (TRẢ TRƯỚC)
+        // ============================================================
         function openQrModal() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
             if (Object.keys(cart).length === 0) return alert("Giỏ hàng đang trống!");
-
-            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
-            
+            const total = Object.values(cart).reduce((sum, i) => sum + i.price * i.quantity, 0);
             document.getElementById('qr-modal-info').innerHTML = `<b>Bàn:</b> ${table} | <b>Cần thu:</b> <span class='money'>${total.toLocaleString()}đ</span>`;
             document.getElementById('qr-pay-modal').style.display = 'flex';
         }
@@ -566,26 +645,25 @@
             document.getElementById('qr-pay-modal').style.display = 'none';
         }
 
+        // ============================================================
+        // XÁC NHẬN THU TIỀN TRƯỚC & ĐẨY ĐƠN XUỐNG BẾP
+        // ============================================================
         async function submitAndPayImmediately(paymentMethod) {
             const table = document.getElementById('table-number').value.trim();
-            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
-            
+            const total = Object.values(cart).reduce((sum, i) => sum + i.price * i.quantity, 0);
+
             const btnPayNow = document.querySelector('.btn-pay-now');
             btnPayNow.disabled = true;
 
-            let methodLabel = " ";
-            if (paymentMethod === "TIỀN MẶT") {
-                methodLabel = " ";
-            }
-
             const items = Object.values(cart).map(i => {
                 const noteText = i.note ? ` (${i.note})` : '';
-                return `${methodLabel} ${i.name}${noteText} (x${i.quantity})`;
+                return `${i.name}${noteText} (x${i.quantity})`;
             });
 
             try {
+                // Status = 'paid' => bếp nhận ra là đơn trả trước
                 const { error: orderError } = await supabaseClient.from('orders').insert([
-                    { table_number: table, items: items, total: total, status: 'paid' }
+                    { table_number: table, items, total, status: 'paid' }
                 ]);
 
                 if (orderError) {
@@ -594,22 +672,26 @@
                     return;
                 }
 
+                // Cộng doanh thu ngay khi thu tiền trước
                 const todayDate = getToday();
                 const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
                 const newTotal = (rev?.total || 0) + total;
 
-                const { error: revError } = await supabaseClient.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
-                
+                const { error: revError } = await supabaseClient.from('revenue').upsert(
+                    { date: todayDate, total: newTotal },
+                    { onConflict: 'date' }
+                );
+
                 if (revError) {
                     alert("Đơn hàng đã gửi nhưng lỗi cộng dồn doanh thu: " + revError.message);
                 } else {
-                    alert(`✅ Đơn hàng Trả Trước [${paymentMethod}] thành công! Doanh thu đã cập nhật.`);
+                    alert(`✅ Đơn [${paymentMethod}] đã thu tiền! Bếp đang chuẩn bị làm món.`);
                 }
 
                 closeQrModal();
                 clearCart();
 
-            } catch (error) {
+            } catch (e) {
                 alert("Lỗi kết nối hệ thống!");
             } finally {
                 btnPayNow.disabled = false;
@@ -623,16 +705,23 @@
             loadActiveOrders();
         }
 
+        // ============================================================
+        // THU TIỀN TẠI BÀN (ĐƠN TRẢ SAU)
+        // ============================================================
         async function payTableFast(table, amount, hasUnfinished) {
             if (hasUnfinished) {
-                if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG!\nBạn có chắc chắn muốn tính tiền sớm và xóa đơn của bàn này không?`)) {
-                    return;
-                }
+                if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} đang có món CHƯA NẤU XONG!\nBạn có chắc muốn tính tiền sớm không?`)) return;
             } else {
                 if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ?`)) return;
             }
 
-            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
+            // Chỉ cập nhật các đơn trả sau (pending/chờ làm/cooking) — không đụng đơn 'paid' (trả trước)
+            const { error: orderError } = await supabaseClient
+                .from('orders')
+                .update({ status: 'bep_done' })
+                .eq('table_number', table)
+                .in('status', ['pending', 'chờ làm', 'cooking', 'đang làm', 'done']);
+
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
                 return;
@@ -642,17 +731,27 @@
             const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
             const newTotal = (rev?.total || 0) + amount;
 
-            const { error: revError } = await supabaseClient.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
+            const { error: revError } = await supabaseClient.from('revenue').upsert(
+                { date: todayDate, total: newTotal },
+                { onConflict: 'date' }
+            );
+
             if (revError) {
-                alert("Đơn hàng đã ẩn nhưng lỗi lưu doanh thu: " + revError.message);
+                alert("Đơn đã ẩn nhưng lỗi lưu doanh thu: " + revError.message);
             } else {
-                alert("✅ Thanh toán hoàn tất! Tiền đã cộng vào doanh thu hôm nay.");
+                alert("✅ Thanh toán hoàn tất! Doanh thu đã cập nhật.");
             }
 
             loadActiveOrders();
         }
 
-        supabaseClient.channel('waiter-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders).subscribe();
+        // ============================================================
+        // REALTIME
+        // ============================================================
+        supabaseClient
+            .channel('waiter-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders)
+            .subscribe();
 
         window.onload = loadInitialData;
     </script>
