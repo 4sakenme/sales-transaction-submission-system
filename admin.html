@@ -62,43 +62,7 @@
 
     // 🔔 KHỞI TẠO ĐỐI TƯỢNG PHÁT ÂM THANH CHUÔNG BÁO
     // Bạn có thể đổi link .wav này thành bất kỳ link âm thanh .mp3 nào khác nếu chủ quán muốn đổi tiếng chuông nhé
-    // 🔔 GIẢI PHÁP CHUYÊN TRỊ SAFARI: Tự phát tần số bíp bíp trực tiếp từ trình duyệt
-    const orderNotificationSound = {
-        play: async function() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Tiếng bíp 1 (Âm cao nhẹ)
-                let osc1 = audioCtx.createOscillator();
-                let gain1 = audioCtx.createGain();
-                osc1.type = 'sine'; 
-                osc1.frequency.setValueAtTime(880, audioCtx.currentTime); 
-                gain1.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
-                osc1.connect(gain1);
-                gain1.connect(audioCtx.destination);
-                osc1.start();
-                osc1.stop(audioCtx.currentTime + 0.12);
-
-                // Tiếng bíp 2 (Kêu sau 0.1 giây tạo hiệu ứng "bíp bíp" máy POS)
-                setTimeout(() => {
-                    let osc2 = audioCtx.createOscillator();
-                    let gain2 = audioCtx.createGain();
-                    osc2.type = 'sine';
-                    osc2.frequency.setValueAtTime(1100, audioCtx.currentTime);
-                    gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-                    osc2.connect(gain2);
-                    gain2.connect(audioCtx.destination);
-                    osc2.start();
-                    osc2.stop(audioCtx.currentTime + 0.15);
-                }, 100);
-                
-            } catch (e) {
-                console.log("Không thể phát âm thanh: ", e);
-            }
-        }
-    };
+    const orderNotificationSound = new Audio("bell.mp3");
 
     function getToday() {
         const d = new Date();
