@@ -217,9 +217,10 @@
         .btn-taste.sauce:hover { background: #e67e22; color: white; }
         .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
 
-        /* 🔥 ĐÃ SỬA: Cho ảnh QR bự lên kích thước 320px */
+        /* 🔥 ĐÃ SỬA: Ảnh QR siêu bự, tự co giãn mượt mà trên điện thoại nhỏ */
         .qr-image {
-            width: 520px;
+            width: 100%;
+            max-width: 520px;
             height: 420px;
             margin: 15px auto;
             display: block;
@@ -229,7 +230,6 @@
             background: #fff;
         }
         .btn-confirm-pay { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 10px; }
-        /* Style cho nút tiền mặt mới */
         .btn-cash-pay { background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 8px; }
 
         @media (max-width: 768px) {
@@ -303,14 +303,13 @@
     </div>
 
     <div id="qr-pay-modal" class="combo-modal">
-        <div class="combo-modal-content" style="max-width: 800px;">
+        <div class="combo-modal-content" style="max-width: 600px; width: 90%;">
             <h3 style="color: #27ae60; margin-bottom: 5px;">Thu Tiền Trả Trước</h3>
             <p id="qr-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
             
             <img id="qr-pay-img" src="2aOboQdQDRATgIqvbsDnMV5cBZLITs3W1FwJspiC.jpg" alt="Mã QR Quán" class="qr-image">
             
             <button class="btn-confirm-pay" onclick="submitAndPayImmediately('CHUYỂN KHOẢN')">✅ Khách đã quét - Xác nhận CK</button>
-            
             <button class="btn-cash-pay" onclick="submitAndPayImmediately('TIỀN MẶT')">💵 Khách trả TIỀN MẶT - Xác nhận</button>
             
             <button class="btn-close-modal" onclick="closeQrModal()">Đóng cửa sổ</button>
@@ -519,7 +518,6 @@
 
         function filterMenu() { renderMenu(); }
 
-        // 1. GỬI ĐƠN TRẢ SAU (Món ăn giữ trạng thái pending)
         async function submitOrder() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
@@ -553,9 +551,6 @@
             }
         }
 
-        // ========================================================
-        // 🏦 2. MỞ POPUP HIỆN QR CÓ SẴN
-        // ========================================================
         function openQrModal() {
             const table = document.getElementById('table-number').value.trim();
             if (!table) return alert("Vui lòng nhập số bàn!");
@@ -563,7 +558,6 @@
 
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
             
-            // Cập nhật thông tin text hiển thị trên popup cho nhân viên dễ nhìn số tiền cần thu
             document.getElementById('qr-modal-info').innerHTML = `<b>Bàn:</b> ${table} | <b>Cần thu:</b> <span class='money'>${total.toLocaleString()}đ</span>`;
             document.getElementById('qr-pay-modal').style.display = 'flex';
         }
@@ -572,7 +566,6 @@
             document.getElementById('qr-pay-modal').style.display = 'none';
         }
 
-        // 💵 3. ĐÃ SỬA: KHÁCH THANH TOÁN XONG -> PHÂN BIỆT CHUYỂN KHOẢN VÀ TIỀN MẶT
         async function submitAndPayImmediately(paymentMethod) {
             const table = document.getElementById('table-number').value.trim();
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
@@ -580,7 +573,6 @@
             const btnPayNow = document.querySelector('.btn-pay-now');
             btnPayNow.disabled = true;
 
-            // Thiết lập nhãn phân biệt hình thức thanh toán cho Bếp dễ kiểm soát đơn
             let methodLabel = "⚠️[ĐÃ CHUYỂN KHOẢN]";
             if (paymentMethod === "TIỀN MẶT") {
                 methodLabel = "⚠️[TIỀN MẶT]";
@@ -592,7 +584,6 @@
             });
 
             try {
-                // Đẩy đơn lên hệ thống dạng 'paid' chuẩn để không bị lỗi cấu trúc cache
                 const { error: orderError } = await supabaseClient.from('orders').insert([
                     { table_number: table, items: items, total: total, status: 'paid' }
                 ]);
@@ -603,7 +594,6 @@
                     return;
                 }
 
-                // Cộng trực tiếp số tiền này vào doanh thu tổng của ngày hôm nay luôn
                 const todayDate = getToday();
                 const { data: rev } = await supabaseClient.from('revenue').select('total').eq('date', todayDate).maybeSingle();
                 const newTotal = (rev?.total || 0) + total;
