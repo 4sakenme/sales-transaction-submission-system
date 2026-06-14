@@ -60,6 +60,10 @@
     }
     adminSupabase = window.supabaseClientInstance;
 
+    // 🔔 KHỞI TẠO ĐỐI TƯỢNG PHÁT ÂM THANH CHUÔNG BÁO
+    // Bạn có thể đổi link .wav này thành bất kỳ link âm thanh .mp3 nào khác nếu chủ quán muốn đổi tiếng chuông nhé
+    const orderNotificationSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav");
+
     function getToday() {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -80,14 +84,12 @@
         const ordersListContainer = document.getElementById('orders-list');
         
         // --- 1. LỌC LOGIC DANH SÁCH CHO BẾP ---
-        // Bếp cần làm: Đơn có trạng thái 'pending', 'cooking', 'done' HOẶC đơn 'paid' nhưng có chữ [ĐÃ TRẢ TIỀN] (tức là trả trước chưa nhấn Xong)
         const bepOrders = (allOrders || []).filter(o => {
             const statusClean = String(o.status || '').toLowerCase().trim();
             
             // Nếu đơn đã trả tiền trước nhưng bếp CHƯA bấm nút "Xong", ta kiểm tra qua nội dung món ăn
             if (statusClean === 'paid') {
                 const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-                // Nếu trong món ăn có chứa cụm từ trả trước và chưa bị đánh dấu hoàn thành riêng ở bếp
                 return itemsStr.includes('ĐÃ TRẢ TIỀN') && !o.is_bep_done;
             }
             
@@ -157,7 +159,6 @@
         }
 
         // --- 2. LỌC LOGIC BẢNG TÍNH TIỀN CHO THU NGÂN ---
-        // Chỉ gom các đơn chưa thanh toán (status khác paid) để hiển thị đòi tiền khách trả sau
         const debts = (allOrders || []).filter(o => String(o.status).toLowerCase().trim() !== 'paid').reduce((acc, o) => {
             acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
             return acc;
@@ -180,26 +181,20 @@
         document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
     }
 
-    // Đổi trạng thái tuần tự cho đơn thông thường
     async function updateStatus(id, nextStatus) {
         const { error } = await adminSupabase.from('orders').update({ status: nextStatus }).eq('id', parseInt(id));
         if (error) { alert("Lỗi cập nhật trạng thái đơn: " + error.message); } else { loadData(); }
     }
 
-    // Đổi trạng thái nội bộ riêng cho đơn Trả Trước tại Bếp để tránh làm mất trạng thái 'paid' gốc
     async function updatePaidOrderStatus(id, nextInternalStatus) {
         let updateFields = { bep_internal_status: nextInternalStatus };
-        
-        // Nếu bếp bấm nút hoàn thành "Xong" đối với đơn trả trước, đánh dấu ẩn hoàn toàn khỏi bếp
         if (nextInternalStatus === 'done') {
             updateFields.is_bep_done = true;
         }
-
         const { error } = await adminSupabase.from('orders').update(updateFields).eq('id', parseInt(id));
         if (error) { alert("Lỗi cập nhật đơn trả trước: " + error.message); } else { loadData(); }
     }
 
-    // Thu tiền toàn bộ hóa đơn của bàn đó (Trả sau)
     async function payTable(table, amount) {
         if(!confirm("Thu tiền bàn " + table + "? Đơn sẽ được chuyển sang trạng thái Đã Thanh Toán.")) return;
         
@@ -221,7 +216,22 @@
         loadData();
     }
 
-    adminSupabase.channel('admin-legacy-fixed-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadData).subscribe();
+    // ========================================================
+    // 🔔 KÊNH REALTIME - PHÁT ÂM THANH KHI CÓ ĐƠN MỚI ĐẨY LÊN
+    // ========================================================
+    adminSupabase.channel('admin-legacy-fixed-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+            // Khi phát hiện có hành động THÊM ĐƠN MỚI (INSERT) từ máy nhân viên phục vụ
+            if (payload.eventType === 'INSERT') {
+                orderNotificationSound.play().catch(e => {
+                    console.log("Trình duyệt tạm chặn âm thanh Autoplay ban đầu: " + e.message);
+                });
+            }
+            // Tải lại dữ liệu lên màn hình bếp và thu ngân
+            loadData();
+        })
+        .subscribe();
+
     window.onload = loadData;
 </script>
 </body>
