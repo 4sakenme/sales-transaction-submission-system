@@ -101,17 +101,8 @@ async function loadData() {
     const { data: allOrders } = await adminSupabase.from('orders').select('*').not('status', 'eq', 'bep_done').order('id', { ascending: true });
     const ordersList = document.getElementById('orders-list');
     
-    // Lọc đơn: Chờ làm, Đang nấu, Đợi phục vụ cho cả trả trước lẫn trả sau
-    const bepOrders = (allOrders || []).filter(o => {
-        const s = getKitchenStatus(o);
-        return [
-            'pending', 'chờ làm',
-            'cooking', 'đang làm',
-            'waiting', 'đợi phục vụ',
-            'done',
-            'paid', 'paid_pending', 'paid_cooking', 'paid_waiting'
-        ].includes(s);
-    });
+    // Hiển thị mọi đơn chưa hoàn tất để tránh rớt đơn khi status nghiệp vụ và trạng thái bếp lệch nhau
+    const bepOrders = (allOrders || []).filter(o => normalizeStatus(o.status) !== 'bep_done');
     
     if (bepOrders.length === 0) {
         ordersList.innerHTML = '<p style="text-align:center; color:#aaa; padding: 20px;">Hiện không có đơn cần làm.</p>';
@@ -131,7 +122,7 @@ async function loadData() {
                 nextStatus = isPrepaidStatus(o.status) ? 'paid_waiting' : 'waiting';
                 btnText = '🔔 Đợi phục vụ';
                 btnColor = '#3498db';
-            } else if (stage === 'waiting' || st === 'done') {
+            } else if (stage === 'waiting') {
                 btnText = '⏳ Đang đợi phục vụ';
                 btnColor = '#27ae60';
             }
