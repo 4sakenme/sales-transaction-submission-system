@@ -20,28 +20,14 @@
         .order-card ul { margin: 5px 0; padding-left: 20px; }
         .order-card li { margin-bottom: 3px; }
 
-        /* 3 nút giai đoạn */
-        .btn-stage {
-            border: none;
-            padding: 11px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            color: white;
-            margin-top: 10px;
-            font-size: 14px;
-            transition: 0.2s;
-        }
+        .btn-stage { border: none; padding: 11px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; color: white; margin-top: 10px; font-size: 14px; transition: 0.2s; }
         .btn-stage:hover { opacity: 0.88; }
         .btn-stage.orange  { background: #e67e22; }
         .btn-stage.blue    { background: #3498db; }
         .btn-stage.green   { background: #27ae60; }
 
-        /* Badge trả trước */
         .paid-now-badge { background: #9b59b6; color: white; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; display: inline-block; margin-left: 8px; }
 
-        /* Bảng thu tiền */
         .table-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eddcd0; }
         .btn-pay-table { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
@@ -81,116 +67,76 @@
         );
     }
     const adminSupabase = window.supabaseClientInstance;
-
     const orderNotificationSound = new Audio("bell.mp3");
 
-    function getToday() {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    function getToday() { 
+        const d = new Date(); 
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
     }
-    function getDisplayDate() {
-        const d = new Date();
-        return `(${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()})`;
+    function getDisplayDate() { 
+        const d = new Date(); 
+        return `(${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()})`; 
     }
 
-    async function loadData() {
-        document.getElementById('display-date').innerText = getDisplayDate();
+    function normalizeStatus(status) {
+        return String(status || '').toLowerCase().trim();
+    }
 
-        // Lấy tất cả đơn chưa hoàn tất hoàn toàn
-        const { data: allOrders, error } = await adminSupabase
-            .from('orders')
-            .select('*')
-            .not('status', 'eq', 'bep_done')
-            .order('id', { ascending: true });
+    function isPrepaidStatus(status) {
+        return normalizeStatus(status).startsWith('paid');
+    }
 
-        if (error) { console.error("Lỗi tải đơn:", error); return; }
+    function getKitchenStage(status) {
+        const normalized = normalizeStatus(status);
+        if (normalized.includes('cooking') || normalized.includes('đang làm')) return 'cooking';
+        if (normalized.includes('waiting') || normalized.includes('đợi phục vụ')) return 'waiting';
+        return 'pending';
+    }
 
-        // ── BẾP: hiển thị đơn chưa đến giai đoạn 'done' ──────────────
-        // Trạng thái bếp cần xử lý: pending, paid, cooking
-        // Trạng thái 'done' = bếp xong, chờ phục vụ bưng → vẫn giữ cho bếp thấy nhưng không cần thao tác
-        const bepOrders = (allOrders || []).filter(o => {
-            const s = String(o.status || '').toLowerCase().trim();
-            return ['pending', 'chờ làm', 'paid', 'cooking', 'đang làm', 'done'].includes(s);
-        });
+async function loadData() {
+    const { data: allOrders } = await adminSupabase.from('orders').select('*').not('status', 'eq', 'bep_done').order('id', { ascending: true });
+    const ordersList = document.getElementById('orders-list');
+    
+    // Lọc đơn: Chờ làm, Đang nấu, Đợi phục vụ cho cả trả trước lẫn trả sau
+    const bepOrders = (allOrders || []).filter(o => {
+        const s = normalizeStatus(o.status);
+        return ['pending', 'chờ làm', 'cooking', 'đang làm', 'waiting', 'đợi phục vụ', 'paid_pending', 'paid_cooking', 'paid_waiting'].includes(s);
+    });
+    
+    if (bepOrders.length === 0) {
+        ordersList.innerHTML = '<p style="text-align:center; color:#aaa; padding: 20px;">Hiện không có đơn cần làm.</p>';
+    } else {
+        ordersList.innerHTML = bepOrders.map(o => {
+            let st = normalizeStatus(o.status);
+            let stage = getKitchenStage(st);
+            let nextStatus = null;
+            let btnText = '⏳ Đang đợi phục vụ';
+            let btnColor = '#95a5a6';
 
-        const ordersListContainer = document.getElementById('orders-list');
+            if (stage === 'pending') {
+                nextStatus = isPrepaidStatus(st) ? 'paid_cooking' : 'cooking';
+                btnText = '🍳 Bắt đầu nấu';
+                btnColor = '#e67e22';
+            } else if (stage === 'cooking') {
+                nextStatus = isPrepaidStatus(st) ? 'paid_waiting' : 'waiting';
+                btnText = '🔔 Đợi phục vụ';
+                btnColor = '#3498db';
+            }
 
-        if (bepOrders.length === 0) {
-            ordersListContainer.innerHTML = '<p style="text-align:center;color:#aaa;padding:20px;">Hiện không có đơn nào.</p>';
-        } else {
-            ordersListContainer.innerHTML = bepOrders.map(o => {
-                const s = String(o.status || '').toLowerCase().trim();
-                const isPrepaid = s === 'paid'; // trả trước, bếp chưa bắt đầu
-                const isCooking = s === 'cooking' || s === 'đang làm';
-                const isDone    = s === 'done';  // bếp xong, chờ phục vụ bưng
+            return `
+                <div class="order-card" style="border-left: 6px solid ${btnColor};">
+                    <h3>📍 Bàn: ${o.table_number} ${isPrepaidStatus(o.status) ? '<span class="paid-now-badge">💵 ĐÃ TRẢ TRƯỚC</span>' : ''}</h3>
+                    <ul style="padding-left: 20px;">${Array.isArray(o.items) ? o.items.map(i => `<li style="margin-bottom: 5px;">${i}</li>`).join('') : `<li>${o.items}</li>`}</ul>
+                    ${nextStatus ? `<button class="btn-status" style="background:${btnColor}" onclick="updateStatus('${o.id}', '${nextStatus}')">${btnText}</button>` : `<button class="btn-status" style="background:#95a5a6; cursor:default">⏳ Đang đợi phục vụ</button>`}
+                </div>
+            `;
+        }).join('');
+    }
 
-                // Badge trả trước
-                const prepaidBadge = (isPrepaid || isCooking && o._prepaid)
-                    ? '' : ''; // xác định qua field riêng bên dưới
-
-                // Cách nhận biết đơn trả trước khi đang cooking:
-                // Ta lưu flag trong items (hoặc dùng field is_prepaid nếu có)
-                // Hiện tại schema chỉ có status, nên:
-                // - paid = trả trước chờ nấu
-                // - pending = trả sau chờ nấu
-                // - cooking = đang nấu (có thể là cả hai) — ta không phân biệt được ở đây
-                //   nhưng về mặt bếp không cần biết, chỉ cần biết giai đoạn
-
-                let borderColor = '#e67e22';
-                let statusLabel = '';
-                let buttonHTML  = '';
-                let paidBadgeHTML = '';
-
-                if (isPrepaid) {
-                    // Giai đoạn 1: chờ làm (trả trước)
-                    paidBadgeHTML = `<span class="paid-now-badge">💵 Trả trước</span>`;
-                    borderColor   = '#9b59b6';
-                    statusLabel   = '<span style="color:#9b59b6;font-weight:bold;">Chờ làm (Trả trước)</span>';
-                    buttonHTML    = `<button class="btn-stage orange" onclick="updateStatus('${o.id}','cooking')">🍳 Bắt đầu làm</button>`;
-
-                } else if (s === 'pending' || s === 'chờ làm') {
-                    // Giai đoạn 1: chờ làm (trả sau)
-                    borderColor = '#e67e22';
-                    statusLabel = '<span style="color:#e67e22;font-weight:bold;">Chờ làm</span>';
-                    buttonHTML  = `<button class="btn-stage orange" onclick="updateStatus('${o.id}','cooking')">🍳 Bắt đầu làm</button>`;
-
-                } else if (isCooking) {
-                    // Giai đoạn 2: đang nấu
-                    borderColor = '#3498db';
-                    statusLabel = '<span style="color:#3498db;font-weight:bold;">Đang nấu 🍳</span>';
-                    buttonHTML  = `<button class="btn-stage blue" onclick="updateStatus('${o.id}','done')">✅ Nấu xong — Báo phục vụ bưng</button>`;
-
-                } else if (isDone) {
-                    // Giai đoạn 3: xong, chờ phục vụ bưng
-                    borderColor = '#27ae60';
-                    statusLabel = '<span style="color:#27ae60;font-weight:bold;">Xong — Chờ phục vụ bưng 🛎️</span>';
-                    buttonHTML  = ''; // bếp không cần làm gì thêm
-                }
-
-                let itemsHTML = '';
-                if (Array.isArray(o.items)) {
-                    itemsHTML = `<ul>${o.items.map(i => `<li>${i}</li>`).join('')}</ul>`;
-                } else {
-                    itemsHTML = `<p>Món: <strong>${o.items || ''}</strong></p>`;
-                }
-
-                return `
-                    <div class="order-card" style="background:${isDone ? '#f0fff4' : '#fffbf7'}; border-left: 6px solid ${borderColor};">
-                        <h3 style="margin:0 0 8px 0;">📍 Bàn: ${o.table_number} ${paidBadgeHTML}</h3>
-                        ${itemsHTML}
-                        <p style="margin:6px 0;">Trạng thái: ${statusLabel}</p>
-                        ${buttonHTML}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // ── THU NGÂN: chỉ đơn trả sau, chưa thanh toán ───────────────
-        const debts = (allOrders || []).filter(o => {
-            const s = String(o.status || '').toLowerCase().trim();
-            // Loại trừ đơn trả trước (paid ban đầu) — nhưng 'paid' giờ cũng là trả trước chờ nấu
-            // Đơn trả sau: pending, cooking, done (không phải paid)
-            return s !== 'paid' && s !== 'bep_done';
+        // ==================== THU NGÂN (TRẢ SAU) ====================
+        const debts = allOrders.filter(o => {
+            const s = normalizeStatus(o.status);
+            return !isPrepaidStatus(s) && s !== 'bep_done';
         }).reduce((acc, o) => {
             acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
             return acc;
@@ -208,7 +154,7 @@
             `).join('');
         }
 
-        // ── DOANH THU ─────────────────────────────────────────────────
+        // Doanh thu
         const { data: rev } = await adminSupabase.from('revenue').select('total').eq('date', getToday()).maybeSingle();
         document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
     }
@@ -226,6 +172,7 @@
             .from('orders')
             .update({ status: 'bep_done' })
             .eq('table_number', table)
+            .not('status', 'ilike', 'paid%')
             .not('status', 'eq', 'bep_done');
 
         if (orderError) { alert("Lỗi: " + orderError.message); return; }
@@ -234,22 +181,13 @@
         const { data: rev } = await adminSupabase.from('revenue').select('total').eq('date', todayDate).maybeSingle();
         const newTotal = (rev?.total || 0) + amount;
 
-        const { error: revError } = await adminSupabase.from('revenue').upsert(
-            { date: todayDate, total: newTotal },
-            { onConflict: 'date' }
-        );
+        await adminSupabase.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
 
-        if (revError) alert("Đã thu nhưng lỗi lưu doanh thu: " + revError.message);
         loadData();
     }
 
     adminSupabase.channel('admin-orders-channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-            if (payload.eventType === 'INSERT') {
-                orderNotificationSound.play().catch(e => console.log("Autoplay blocked:", e.message));
-            }
-            loadData();
-        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadData())
         .subscribe();
 
     window.onload = loadData;

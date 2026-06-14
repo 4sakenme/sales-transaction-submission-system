@@ -166,6 +166,22 @@
     let currentCategory = 'ALL';
     let temporaryComboId = null;
 
+    function normalizeStatus(status) {
+        return String(status || '').toLowerCase().trim();
+    }
+
+    function isPrepaidStatus(status) {
+        const normalized = normalizeStatus(status);
+        return normalized === 'paid' || normalized.startsWith('paid_');
+    }
+
+    function getKitchenStage(status) {
+        const normalized = normalizeStatus(status);
+        if (normalized.includes('cooking') || normalized.includes('đang làm')) return 'cooking';
+        if (normalized.includes('waiting') || normalized.includes('đợi phục vụ')) return 'waiting';
+        return 'pending';
+    }
+
     function getToday() {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -230,15 +246,15 @@
             //       dù có nhầm cooking là trả sau thì phục vụ bấm thu tiền cũng không sao
             //       (thực tế bếp sẽ xử lý xong nhanh và ít khi lẫn lộn)
 
-            const isPrepaidWaiting = s === 'paid'; // trả trước, bếp chưa làm
-            if (isPrepaidWaiting) tableGroups[tbl].hasPrepaid = true;
+            const isPrepaid = isPrepaidStatus(s);
+            if (isPrepaid) tableGroups[tbl].hasPrepaid = true;
 
             // Chỉ cộng nợ cho đơn trả sau (pending/cooking/done)
-            if (s !== 'paid') {
+            if (!isPrepaid) {
                 tableGroups[tbl].debtTotal += (o.total || 0);
             }
 
-            tableGroups[tbl].orders.push({ ...o, _isPrepaidWaiting: isPrepaidWaiting });
+            tableGroups[tbl].orders.push({ ...o, _isPrepaid: isPrepaid });
         });
 
         listContainer.innerHTML = Object.keys(tableGroups).map(table => {
@@ -246,79 +262,27 @@
 
             // Render từng đơn trong bàn
             const ordersHTML = g.orders.map(o => {
-                const s = String(o.status || '').toLowerCase().trim();
+                const s = normalizeStatus(o.status);
+                const stage = getKitchenStage(s);
+                const isPrepaid = isPrepaidStatus(s);
 
                 let badgeColor = '#e67e22';
                 let badgeText  = 'Chờ làm';
                 let rowAction  = '';
 
-                if (s === 'paid') {
-                    // Trả trước, chờ bếp nấu
+                if (stage === 'pending') {
                     badgeColor = '#9b59b6';
                     badgeText  = 'Chờ nấu';
-                } else if (s === 'cooking' || s === 'đang làm') {
+                } else if (stage === 'cooking') {
                     badgeColor = '#3498db';
                     badgeText  = 'Đang nấu 🍳';
-                } else if (s === 'done') {
-                    // Bếp xong rồi — phục vụ cần bưng
+                } else if (stage === 'waiting') {
                     badgeColor = '#27ae60';
-                    badgeText  = 'Xong ✅ — Cần bưng!';
+                    badgeText  = 'Đợi phục vụ';
 
-                    // Phân biệt: đơn này trả trước hay trả sau?
-                    // Dựa vào debtTotal: nếu o.total đang trong debtTotal thì trả sau
-                    // Cách đơn giản hơn: ta đánh dấu qua field tạm _isPrepaidWaiting
-                    // Nhưng khi cooking/done ta không biết. 
-                    // => Giải pháp: khi submit trả trước ta thêm tag vào items (đã làm ở submitAndPayImmediately cũ)
-                    //    HOẶC: nút "Đã bưng" luôn hiện, nếu trả trước thì bep_done, trả sau thì giữ (thu tiền sau)
-                    //    Vấn đề: ta không biết đơn cooking/done là trả trước hay trả sau
-                    // => Giải pháp cuối: khi insert trả trước, ta đánh dấu trong items[0] bằng prefix đặc biệt
-                    //    hoặc dùng field note. Hiện tại ta dùng cách kiểm tra xem items có chứa tag không.
-                    //    Nhưng file hiện tại không tag items.
-                    // => Cách đơn giản nhất & không cần đổi schema: 
-                    //    Đơn trả trước insert status='paid', bếp đổi → cooking → done
-                    //    Ta không có cách biết cooking/done là trả trước hay trả sau
-                    //    NHƯNG: ta thêm 1 field nhỏ vào DB = is_prepaid (boolean)
-                    //    Hoặc: dùng 1 status riêng cho trả trước: 'paid_cooking', 'paid_done'
-                    //    => Giải pháp KHÔNG đổi schema: dùng status 'paid_done' cho trả trước xong
-                    //    Nhưng bếp đang dùng updateStatus generic...
-                    //
-                    // Giải pháp thực dụng nhất cho code hiện tại:
-                    // Đơn 'done' mà total = 0 hoặc nằm trong debtTotal => trả sau
-                    // Đơn 'done' mà KHÔNG nằm trong debtTotal => trả trước
-                    // => Kiểm tra: nếu o.total > 0 và debtTotal >= o.total => trả sau
-                    //              ngược lại => trả trước
-                    // Thực ra đơn giản nhất: ta thêm field is_prepaid vào insert
-
-                    // *** Dùng heuristic: debtTotal chứa tổng đơn trả sau ***
-                    // Nếu bàn có debtTotal > 0 và order này có total nằm trong đó → trả sau
-                    // Vì debtTotal = sum(all non-paid orders), nếu order này là 'done' (không phải 'paid')
-                    // thì nó đang nằm trong debtTotal → trả sau
-                    // Nếu order status bắt đầu là 'paid' (trả trước) thì bếp đổi → cooking → done
-                    // nhưng debtTotal KHÔNG cộng đơn 'paid' → nên total của đơn này không có trong debtTotal
-                    // => Kiểm tra: nếu o.total nằm trong debtTotal (và debtTotal >= o.total) => trả sau
-                    //    NHƯNG nếu có 2 đơn trả sau cùng tổng tiền thì nhầm...
-                    //    Đây là giới hạn của schema hiện tại.
-                    //
-                    // QUYẾT ĐỊNH CUỐI: để chắc chắn, khi submit trả trước ta đổi status flow:
-                    //   paid → paid_cooking → paid_done  (thay vì dùng cooking/done chung)
-                    // Bếp sẽ nhận diện qua prefix 'paid_'
-                    // Ta implement luôn ở đây:
-
-                    const isPrepaidDone = o._isPrepaidWaiting; // không đủ vì đơn đã qua cooking rồi
-                    // Thay vào đó: check xem đơn này có total nằm trong debt không
-                    // Nếu debtTotal >= o.total và s !== 'paid' => đây là đơn trả sau
-                    const isDebtOrder = (g.debtTotal > 0); // simplified: nếu bàn có nợ thì có đơn trả sau
-
-                    // Nút Đã bưng luôn hiện khi done
-                    // Logic xử lý khi bấm:
-                    // - Nếu bàn có debtTotal > 0: đơn này có thể trả sau → giữ lại (chỉ đánh dấu bep_done cho đơn này)
-                    // - Nếu bàn không có debtTotal (debtTotal=0): đơn trả trước → bep_done → mất
-                    // Thực ra ta không cần phân biệt ở đây: bấm "Đã bưng" chỉ đánh dấu đơn CỤ THỂ này là bep_done
-                    // Đơn trả sau vẫn còn trong DB với status done/cooking/pending
-                    // Đơn trả trước cũng bep_done → biến mất
-                    // => Phục vụ sau đó thu tiền qua nút "Thu tiền" bên dưới
-
-                    rowAction = `<button class="btn-action btn-bung" onclick="markDelivered('${o.id}')">🛎️ Đã bưng lên bàn</button>`;
+                    if (isPrepaid) {
+                        rowAction = `<button class="btn-action btn-bung" onclick="markDelivered('${o.id}')">🛎️ Đã bưng lên bàn</button>`;
+                    }
                 }
 
                 const badge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
@@ -501,9 +465,9 @@
         btn.disabled = true;
         const items = Object.values(cart).map(i => `${i.name}${i.note ? ` (${i.note})` : ''} (x${i.quantity})`);
         try {
-            // Status 'paid' = bếp nhận ra đây là đơn trả trước
+            // Status 'paid_pending' = đơn trả trước nhưng vẫn đi qua 3 giai đoạn
             const { error: orderError } = await supabaseClient.from('orders').insert([
-                { table_number: table, items, total, status: 'paid' }
+                { table_number: table, items, total, status: 'paid_pending' }
             ]);
             if (orderError) { alert("Lỗi: " + orderError.message); btn.disabled = false; return; }
 
@@ -535,13 +499,13 @@
     async function payTableFast(table, amount) {
         if (!confirm(`Thu tiền bàn ${table}? Tổng: ${amount.toLocaleString()}đ`)) return;
 
-        // Đánh dấu bep_done cho các đơn trả sau của bàn này
-        // (pending, cooking, done — không đụng đơn 'paid' trả trước đang chờ nấu)
+        // Đánh dấu bep_done cho các đơn trả sau của bàn này.
+        // Không đụng đơn trả trước có prefix paid_.
         const { error: orderError } = await supabaseClient
             .from('orders')
             .update({ status: 'bep_done' })
             .eq('table_number', table)
-            .in('status', ['pending','chờ làm','cooking','đang làm','done']);
+            .in('status', ['pending','chờ làm','cooking','đang làm','waiting','đợi phục vụ','done']);
 
         if (orderError) { alert("Lỗi: " + orderError.message); return; }
 
