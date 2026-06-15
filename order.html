@@ -182,6 +182,15 @@
             font-weight: bold;
             display: inline-block;
         }
+        .paid-now-badge-inline {
+            background: #27ae60;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
 
         /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT & POPUP QR */
         .combo-modal {
@@ -217,7 +226,7 @@
         .btn-taste.sauce:hover { background: #e67e22; color: white; }
         .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
 
-        /* 🔥 ĐÃ SỬA: Ảnh QR siêu bự, tự co giãn mượt mà trên điện thoại nhỏ */
+        /* 🔥 Ảnh QR tự co giãn mượt mà */
         .qr-image {
             width: 100%;
             max-width: 520px;
@@ -345,8 +354,8 @@
         }
 
         async function loadActiveOrders() {
-            // Lấy cả các đơn hàng ngoại trừ trạng thái 'paid' hoặc trạng thái hoàn thành ẩn từ bếp 'bep_done'
-            const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid').neq('status', 'bep_done');
+            // Lấy toàn bộ đơn ngoại trừ các đơn đã hoàn tất ẩn hoàn toàn khỏi bếp và phục vụ ('bep_done')
+            const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'bep_done').order('id', { ascending: true });
             if (error) { console.error(error); return; }
 
             const listContainer = document.getElementById('waiter-orders-list');
@@ -355,47 +364,60 @@
                 return;
             }
 
-            const tableGroups = {};
-            orders.forEach(o => {
-                if (!tableGroups[o.table_number]) {
-                    tableGroups[o.table_number] = { total: 0, itemsWithStatus: [], hasUnfinished: false };
-                }
-                tableGroups[o.table_number].total += (o.total || 0);
-                
-                if (o.status !== 'done') {
-                    tableGroups[o.table_number].hasUnfinished = true;
+            listContainer.innerHTML = orders.map(o => {
+                let itemsHTML = '';
+                if (Array.isArray(o.items)) {
+                    itemsHTML = o.items.map(item => `<li>${item}</li>`).join('');
+                } else if (o.items) {
+                    itemsHTML = `<li>${o.items}</li>`;
                 }
 
+                // Nhận diện loại đơn trả trước
+                const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
+                const isPaidAhead = itemsStr.includes('ĐÃ CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT') || o.status === 'paid';
+                let paidBadge = isPaidAhead ? `<span class="paid-now-badge-inline">💵 TRẢ TRƯỚC</span>` : '';
+
+                // Xác định màu sắc nhãn trạng thái và nút tương tác
                 let badgeColor = '#e67e22'; 
                 let badgeText = 'Chờ làm';
-                if (o.status === 'cooking') { badgeColor = '#e7a460'; badgeText = 'Đang nấu'; }
-                if (o.status === 'done') { badgeColor = '#27ae60'; badgeText = 'Đã xong'; }
+                let actionButtonHTML = '';
 
-                const statusBadge = `<span class="item-status-badge" style="background:${badgeColor}">${badgeText}</span>`;
-
-                if (Array.isArray(o.items)) {
-                    o.items.forEach(item => {
-                        tableGroups[o.table_number].itemsWithStatus.push(`<li>${item} ${statusBadge}</li>`);
-                    });
-                } else if (o.items) {
-                    tableGroups[o.table_number].itemsWithStatus.push(`<li>${o.items} ${statusBadge}</li>`);
+                if (o.status === 'cooking') { 
+                    badgeColor = '#3498db'; 
+                    badgeText = 'Đang nấu'; 
+                } else if (o.status === 'done') { 
+                    badgeColor = '#27ae60'; 
+                    badgeText = 'Đã nấu xong'; 
+                } else if (o.status === 'paid') {
+                    badgeColor = '#e67e22'; 
+                    badgeText = 'Trả trước (Chờ làm)'; 
                 }
-            });
 
-            listContainer.innerHTML = Object.keys(tableGroups).map(table => {
-                const group = tableGroups[table];
+                // Cập nhật cấu trúc nút bấm cho từng loại đơn
+                if (isPaidAhead) {
+                    if (o.status === 'done') {
+                        // Nếu bếp báo đã nấu xong đơn trả trước -> phục vụ bưng lên xong nhấn hoàn tất để ẩn đơn
+                        actionButtonHTML = `<button class="btn-pay-fast" style="background: #2ecc71;" onclick="servePaidAheadOrder('${o.id}')">✅ Đã phục vụ món (Ẩn đơn)</button>`;
+                    } else {
+                        actionButtonHTML = `<button class="btn-pay-fast" style="background: #7f8c8d; cursor: not-allowed;" disabled>⏳ Đang chờ Bếp chế biến món...</button>`;
+                    }
+                } else {
+                    // Nếu là đơn trả sau -> Có nút thu tiền tại bàn xuyên suốt quy trình
+                    let warningParam = (o.status !== 'done') ? 'true' : 'false';
+                    actionButtonHTML = `<button class="btn-pay-fast" onclick="payTableFast('${o.id}', '${o.table_number}', ${o.total}, ${warningParam})">💵 Thu tiền tại bàn (Món ${badgeText.toLowerCase()})</button>`;
+                }
+
                 return `
-                    <div class="waiter-order-card">
+                    <div class="waiter-order-card" style="border-left: 5px solid ${badgeColor};">
                         <h4>
-                            <span>📍 Bàn: ${table}</span>
-                            <span class="money">${group.total.toLocaleString()}đ</span>
+                            <span>📍 Bàn: ${o.table_number} ${paidBadge}</span>
+                            <span class="money">${(o.total || 0).toLocaleString()}đ</span>
                         </h4>
+                        <p style="margin: 3px 0; font-size: 12px; color: #666;">Trạng thái: <b style="color: ${badgeColor};">${badgeText}</b></p>
                         <ul style="list-style-type: square; padding-left: 20px;">
-                            ${group.itemsWithStatus.join('')}
+                            ${itemsHTML}
                         </ul>
-                        <button class="btn-pay-fast" onclick="payTableFast('${table}', ${group.total}, ${group.hasUnfinished})">
-                            💵 Thu tiền tại bàn
-                        </button>
+                        ${actionButtonHTML}
                     </div>
                 `;
             }).join('');
@@ -624,16 +646,18 @@
             loadActiveOrders();
         }
 
-        async function payTableFast(table, amount, hasUnfinished) {
-            if (hasUnfinished) {
-                if (!confirm(`⚠️ CẢNH BÁO: Bàn ${table} hiện đang có món CHƯA NẤU XONG!\nBạn có chắc chắn muốn tính tiền sớm và xóa đơn của bàn này không?`)) {
+        // XỬ LÝ CHO ĐƠN TRẢ SAU: Thu tiền trực tiếp tại bàn và cộng doanh thu
+        async function payTableFast(id, table, amount, isUnfinished) {
+            if (isUnfinished) {
+                if (!confirm(`⚠️ CẢNH BÁO: Đơn hàng bàn ${table} hiện đang CHƯA LÀM XONG!\nBạn có chắc chắn muốn tính tiền sớm và ẩn đơn này không?`)) {
                     return;
                 }
             } else {
-                if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ?`)) return;
+                if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ? Đơn hàng sẽ hoàn tất.`)) return;
             }
 
-            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
+            // Chuyển trạng thái sang 'bep_done' để đồng bộ ẩn ở cả màn bếp và phục vụ
+            const { error: orderError } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('id', parseInt(id));
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
                 return;
@@ -653,7 +677,20 @@
             loadActiveOrders();
         }
 
-        // 🔥 ĐỒNG BỘ REALTIME: Lắng nghe mọi sự thay đổi dữ liệu từ bảng orders để cập nhật trạng thái tự động
+        // XỬ LÝ CHO ĐƠN TRẢ TRƯỚC: Chỉ ẩn đơn đi khi đã phục vụ xong (Doanh thu đã cộng từ lúc tạo đơn)
+        async function servePaidAheadOrder(id) {
+            if (!confirm("Xác nhận món ăn này đã được bưng lên phục vụ xong cho khách? Đơn hàng sẽ đóng.")) return;
+            
+            const { error } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('id', parseInt(id));
+            if (error) {
+                alert("Lỗi cập nhật trạng thái: " + error.message);
+            } else {
+                alert("🚀 Đã hoàn tất và đóng đơn trả trước!");
+                loadActiveOrders();
+            }
+        }
+
+        // 🔥 ĐỒNG BỘ REALTIME TOÀN DIỆN: Lắng nghe mọi cập nhật trạng thái từ Bếp để hiển thị nút chuẩn xác
         supabaseClient.channel('waiter-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders).subscribe();
 
         window.onload = loadInitialData;

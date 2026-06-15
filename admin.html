@@ -104,19 +104,19 @@
     async function loadData() {
         document.getElementById('display-date').innerText = getDisplayDate();
 
-        // Tải đơn hàng chưa hoàn tất hẳn (loại trừ paid)
+        // Đổi câu lệnh lọc: Chỉ loại trừ đơn 'bep_done' (đơn đã thanh toán/hoàn tất hoàn toàn)
         const { data: allOrders, error } = await adminSupabase
             .from('orders')
             .select('*')
-            .neq('status', 'paid')
+            .neq('status', 'bep_done')
             .order('id', { ascending: true });
 
         if (error) { console.error("Lỗi tải đơn:", error); return; }
 
         const ordersListContainer = document.getElementById('orders-list');
         
-        // Bếp xử lý 2 giai đoạn đầu: pending (Chờ làm) và cooking (Đang nấu)
-        const bepOrders = (allOrders || []).filter(o => o.status === 'pending' || o.status === 'cooking');
+        // Bếp hiển thị tất cả các đơn chưa hoàn thành ẩn hoàn toàn (bao gồm pending, cooking, done, paid)
+        const bepOrders = allOrders || [];
 
         if (bepOrders.length === 0) {
             ordersListContainer.innerHTML = '<p style="text-align:center; color:#aaa; padding: 20px;">Hiện tại không có đơn hàng nào chờ làm.</p>';
@@ -130,19 +130,32 @@
                 }
 
                 // Kiểm tra nhãn đơn trả trước
-                const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-                const isPaidAhead = itemsStr.includes('ĐÃ CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT');
+                const itemsStr = Array.isArray(o.items) ? o.items.join(' \n') : String(o.items || '');
+                const isPaidAhead = itemsStr.includes('ĐÃ CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT') || o.status === 'paid';
                 let paidBadge = isPaidAhead ? `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>` : '';
 
                 let statusTextText = '';
                 let buttonHTML = '';
                 let borderLeftColor = '#e67e22';
 
+                // Phân bổ trạng thái nút bấm tại bếp để đơn không bị biến mất
                 if (o.status === 'cooking') {
                     statusTextText = '<span style="color: #3498db; font-weight: bold;">Đang nấu...</span>';
-                    // Ấn xong món chuyển sang trạng thái bưng bê ('done') cho cả 2 loại đơn
                     buttonHTML = `<button class="btn-status" style="background: #3498db" onclick="updateStatus('${o.id}', 'done')">🔔 Báo xong (Chuyển Phục Vụ bưng)</button>`;
                     borderLeftColor = '#3498db';
+                } else if (o.status === 'done') {
+                    statusTextText = '<span style="color: #27ae60; font-weight: bold;">Đã nấu xong! Chờ phục vụ bưng / thu tiền...</span>';
+                    if (isPaidAhead) {
+                        // Nếu là đơn trả trước, bếp bưng xong ấn nút này để hoàn tất ẩn đơn
+                        buttonHTML = `<button class="btn-status" style="background: #2ecc71" onclick="updateStatus('${o.id}', 'bep_done')">✅ Đã bưng lên - Hoàn tất đơn trả trước</button>`;
+                    } else {
+                        buttonHTML = `<button class="btn-status" style="background: #7f8c8d; cursor: not-allowed;" disabled>⏳ Đơn chờ thanh toán tại bàn hoặc tại quầy</button>`;
+                    }
+                    borderLeftColor = '#27ae60';
+                } else if (o.status === 'paid') {
+                    statusTextText = '<span style="color: #2ecc71; font-weight: bold;">Trả trước (Chờ làm)</span>';
+                    buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
+                    borderLeftColor = '#2ecc71';
                 } else {
                     statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ bếp làm</span>';
                     buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
@@ -157,7 +170,7 @@
                         <p>Trạng thái: <strong>${statusTextText}</strong></p>
                         ${buttonHTML}
                         <div class="order-actions">
-                            <button class="btn-edit-order" onclick="openEditModal('${o.id}', \`${itemsStr}\`, ${o.total})">📝 Sửa đơn</button>
+                            <button class="btn-edit-order" onclick="openEditModal('${o.id}', \`${itemsStr.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, ${o.total})">📝 Sửa đơn</button>
                             <button class="btn-cancel-order" onclick="cancelOrder('${o.id}')">❌ Hủy đơn</button>
                         </div>
                     </div>
@@ -165,10 +178,10 @@
             }).join('');
         }
 
-        // --- BẢNG TÍNH TIỀN CHO THU NGÂN TẠI QUẦY (Chỉ gom đơn trả sau) ---
+        // --- BẢNG TÍNH TIỀN CHO THU NGÂN TẠI QUẦY (Chỉ hiển thị đơn trả sau thực tế) ---
         const debts = (allOrders || []).filter(o => {
             const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-            return !itemsStr.includes('ĐÃ CHUYỂN KHOẢN') && !itemsStr.includes('TIỀN MẶT');
+            return !itemsStr.includes('ĐÃ CHUYỂN KHOẢN') && !itemsStr.includes('TIỀN MẶT') && o.status !== 'paid';
         }).reduce((acc, o) => {
             acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
             return acc;
@@ -199,7 +212,8 @@
     async function payTable(table, amount) {
         if(!confirm("Thu tiền bàn " + table + " số tiền " + amount.toLocaleString() + "đ? Đơn hàng sẽ hoàn tất.")) return;
         
-        const { error: orderError } = await adminSupabase.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
+        // Khi thu tiền đơn trả sau, đổi trạng thái thành 'bep_done' để ẩn đồng thời ở cả bếp và quầy tính tiền
+        const { error: orderError } = await adminSupabase.from('orders').update({ status: 'bep_done' }).eq('table_number', table).neq('status', 'bep_done');
         if (orderError) { alert("Lỗi: " + orderError.message); return; }
         
         const todayDate = getToday();
