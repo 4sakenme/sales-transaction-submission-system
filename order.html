@@ -143,7 +143,7 @@
 
         .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         
-        /* ĐỒNG BỘ NÚT GỬI ĐƠN / THÀNH TOÁN TRƯỚC */
+        /* ĐỒNG BỘ 2 NÚT BẤM GỬI ĐƠN / THÀNH TOÁN TRƯỚC */
         .btn-submit { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
         .btn-pay-now { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; }
@@ -209,7 +209,7 @@
             font-size: 13px;
         }
 
-        /* MODAL POPUPS */
+        /* POPUP CHỌN VỊ COMBO ĂN VẶT & POPUP QR & POPUP SỬA ĐƠN */
         .combo-modal {
             display: none; 
             position: fixed; 
@@ -341,7 +341,7 @@
             <h3 style="color: #27ae60; margin-bottom: 5px;">Thu Tiền Trả Trước</h3>
             <p id="qr-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
             
-            <img id="qr-pay-img" src="" alt="Mã QR Quán" class="qr-image">
+            <img src="2aOboQdQDRATgIqvbsDnMV5cBZLITs3W1FwJspiC.jpg" alt="Mã QR Quán" class="qr-image">
             
             <button class="btn-confirm-pay" onclick="submitAndPayImmediately('CHUYỂN KHOẢN')">✅ Khách đã quét - Xác nhận CK</button>
             <button class="btn-cash-pay" onclick="submitAndPayImmediately('TIỀN MẶT')">💵 Khách trả TIỀN MẶT - Xác nhận</button>
@@ -355,7 +355,7 @@
             <h3 style="color: #e67e22; margin-bottom: 5px;">💵 Thu Tiền Tại Bàn (Trả Sau)</h3>
             <p id="qr-later-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
             
-            <img id="qr-pay-later-img" src="" alt="Mã QR Quán" class="qr-image">
+            <img src="2aOboQdQDRATgIqvbsDnMV5cBZLITs3W1FwJspiC.jpg" alt="Mã QR Quán" class="qr-image">
             
             <button class="btn-confirm-pay" style="background: #27ae60;" id="btn-confirm-later-ck">✅ Khách đã quét - Xác nhận CK & Mất Đơn</button>
             <button class="btn-cash-pay" style="background: #e67e22;" id="btn-confirm-later-cash">💵 Khách trả TIỀN MẶT - Xác nhận & Mất Đơn</button>
@@ -386,11 +386,6 @@
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         
-        // ⚙️ THÔNG TIN NGÂN HÀNG CỦA BẠN:
-        const MY_BANK_CODE = "Vietcombank";  
-        const MY_BANK_ACCOUNT = "STK_CUA_BAN"; 
-        const MY_ACCOUNT_NAME = "TEN_CHU_TK";  
-
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': 'beut123' } }
         });
@@ -421,7 +416,7 @@
 
             const listContainer = document.getElementById('waiter-orders-list');
             if (!orders || orders.length === 0) {
-                listContainer.innerHTML = '<p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào gọi món.</p>';
+                listContainer.innerHTML = '<p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào cần xử lý.</p>';
                 return;
             }
 
@@ -641,12 +636,6 @@
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
             
             document.getElementById('qr-modal-info').innerHTML = `<b>Bàn:</b> ${table} | <b>Cần thu:</b> <span class='money'>${total.toLocaleString()}đ</span>`;
-            
-            const transferInfo = encodeURIComponent(`BAN ${table} THANH TOAN`);
-            const encodedName = encodeURIComponent(MY_ACCOUNT_NAME);
-            const vietQrUrl = `https://img.vietqr.io/image/${MY_BANK_CODE}-${MY_BANK_ACCOUNT}-qr_only.png?amount=${total}&addInfo=${transferInfo}&accountName=${encodedName}`;
-            
-            document.getElementById('qr-pay-img').src = vietQrUrl;
             document.getElementById('qr-pay-modal').style.display = 'flex';
         }
 
@@ -715,7 +704,7 @@
             document.getElementById('qr-pay-later-modal').style.display = 'none';
         }
 
-        // ĐỒNG BỘ NÚT THU TIỀN TRẢ SAU: Bật popup QR, có 2 nút xác nhận CK và tiền mặt riêng biệt
+        // BẬT POPUP QR CHO ĐƠN TRẢ SAU (CẤU HÌNH 2 NÚT THAO TÁC RIÊNG BIỆT)
         async function payTableFast(id, table, amount, isUnfinished) {
             if (isUnfinished) {
                 if (!confirm(`⚠️ CẢNH BÁO: Đơn hàng bàn ${table} hiện đang CHƯA LÀM XONG!\nBạn có chắc chắn muốn tính tiền sớm cho bàn này không?`)) {
@@ -725,13 +714,7 @@
 
             document.getElementById('qr-later-modal-info').innerHTML = `<b>Bàn số:</b> ${table} | <b>Tổng tiền thanh toán:</b> <span class='money'>${amount.toLocaleString()}đ</span>`;
             
-            const transferInfo = encodeURIComponent(`BAN ${table} TINH TIEN`);
-            const encodedName = encodeURIComponent(MY_ACCOUNT_NAME);
-            const vietQrUrl = `https://img.vietqr.io/image/${MY_BANK_CODE}-${MY_BANK_ACCOUNT}-qr_only.png?amount=${amount}&addInfo=${transferInfo}&accountName=${encodedName}`;
-            
-            document.getElementById('qr-pay-later-img').src = vietQrUrl;
-            
-            // Gán hành động tương ứng cho 2 nút Bấm Xác Nhận trên Popup Trả sau
+            // Gán hành động tương ứng cho từng nút bấm trên giao diện
             document.getElementById('btn-confirm-later-ck').onclick = function() {
                 executePayTableLater(id, table, amount, 'CHUYỂN KHOẢN');
             };
@@ -742,7 +725,7 @@
             document.getElementById('qr-pay-later-modal').style.display = 'flex';
         }
 
-        // HÀM XỬ LÝ KHI PHỤC VỤ ẤN NÚT XÁC NHẬN TRÊN POPUP QR TRẢ SAU
+        // HÀM XỬ LÝ KHI BẤM XÁC NHẬN TRÊN POPUP TRẢ SAU
         async function executePayTableLater(id, table, amount, paymentMethod) {
             const { error: orderError } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('id', parseInt(id));
             if (orderError) {
