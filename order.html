@@ -345,7 +345,8 @@
         }
 
         async function loadActiveOrders() {
-            const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid');
+            // Lấy cả các đơn hàng ngoại trừ trạng thái 'paid' hoặc trạng thái hoàn thành ẩn từ bếp 'bep_done'
+            const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'paid').neq('status', 'bep_done');
             if (error) { console.error(error); return; }
 
             const listContainer = document.getElementById('waiter-orders-list');
@@ -652,6 +653,7 @@
             loadActiveOrders();
         }
 
+        // 🔥 ĐỒNG BỘ REALTIME: Lắng nghe mọi sự thay đổi dữ liệu từ bảng orders để cập nhật trạng thái tự động
         supabaseClient.channel('waiter-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders).subscribe();
 
         window.onload = loadInitialData;

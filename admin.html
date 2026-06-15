@@ -16,13 +16,27 @@
         .bep-section { flex: 1.6; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         .thungon-section { flex: 1; background: #fffdfb; padding: 20px; border-radius: 16px; border: 2px solid #e7a460; height: fit-content; }
         
-        .order-card { margin-bottom: 15px; background: #fffbf7; padding: 15px; border-radius: 12px; border: 1px solid #eddcd0; }
+        .order-card { margin-bottom: 15px; background: #fffbf7; padding: 15px; border-radius: 12px; border: 1px solid #eddcd0; position: relative; }
         .btn-status { border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; color: white; margin-top: 10px; transition: 0.3s; display: block; text-align: center; text-decoration: none; }
         .table-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eddcd0; }
         .btn-pay-table { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         
-        /* Nhãn cảnh báo đơn hàng đã thanh toán trước */
         .paid-now-badge { background: #27ae60; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; display: inline-block; margin-left: 10px; }
+        
+        /* CSS cho nút sửa và hủy đơn */
+        .order-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .btn-edit-order { flex: 1; background: #f39c12; color: white; border: none; padding: 6px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-cancel-order { flex: 1; background: #c0392b; color: white; border: none; padding: 6px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
+
+        /* Modal popup sửa đơn */
+        .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .modal-content h3 { margin-top: 0; color: #4e3629; }
+        .modal-content label { display: block; margin-top: 10px; font-weight: bold; font-size: 14px; text-align: left; }
+        .modal-content textarea, .modal-content input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 6px; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-modal-save { flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-modal-close { flex: 1; background: #ccc; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
         @media (max-width: 768px) { .admin-main-layout { flex-direction: column; } }
         .order-card ul { margin: 5px 0; padding-left: 20px; }
@@ -46,10 +60,25 @@
             <div id="orders-list"></div>
         </section>
         <section class="thungon-section">
-            <h2 style="color: #27ae60; text-align: center;">📋 BẢNG THU TIỀN (TRẢ SAU)</h2>
+            <h2 style="color: #27ae60; text-align: center;">📋 BẢNG THU TIỀN TẠI QUẦY (TRẢ SAU)</h2>
             <div id="table-debts-list"></div>
         </section>
     </main>
+
+    <div id="edit-order-modal" class="modal">
+        <div class="modal-content">
+            <h3>📝 Chỉnh sửa đơn hàng</h3>
+            <input type="hidden" id="edit-id">
+            <label>Nội dung món ăn (Sửa text):</label>
+            <textarea id="edit-items" rows="5"></textarea>
+            <label>Tổng tiền đơn (đ):</label>
+            <input type="number" id="edit-total">
+            <div class="modal-buttons">
+                <button class="btn-modal-save" onclick="saveEditedOrder()">Lưu thay đổi</button>
+                <button class="btn-modal-close" onclick="closeEditModal()">Hủy</button>
+            </div>
+        </div>
+    </div>
 
 <script>
     let adminSupabase;
@@ -60,7 +89,6 @@
     }
     adminSupabase = window.supabaseClientInstance;
 
-    // 🔔 KHỞI TẠO ĐỐI TƯỢNG PHÁT ÂM THANH CHUÔNG BÁO (GIỮ NGUYÊN)
     const orderNotificationSound = new Audio("bell.mp3");
 
     function getToday() {
@@ -76,22 +104,19 @@
     async function loadData() {
         document.getElementById('display-date').innerText = getDisplayDate();
 
-        // Lấy tất cả các đơn hàng chưa hoàn tất xử lý ở bếp (loại trừ hẳn 'bep_done') để giữ lại đơn qua đêm
+        // Tải đơn hàng chưa hoàn tất hẳn (loại trừ paid)
         const { data: allOrders, error } = await adminSupabase
             .from('orders')
             .select('*')
-            .not('status', 'eq', 'bep_done')
+            .neq('status', 'paid')
             .order('id', { ascending: true });
 
         if (error) { console.error("Lỗi tải đơn:", error); return; }
 
         const ordersListContainer = document.getElementById('orders-list');
         
-        // --- 1. LỌC LOGIC DANH SÁCH CHO BẾP ---
-        const bepOrders = (allOrders || []).filter(o => {
-            const statusClean = String(o.status || '').toLowerCase().trim();
-            return statusClean === 'pending' || statusClean === 'chờ làm' || statusClean === 'paid' || statusClean === 'cooking' || statusClean === 'đang làm';
-        });
+        // Bếp xử lý 2 giai đoạn đầu: pending (Chờ làm) và cooking (Đang nấu)
+        const bepOrders = (allOrders || []).filter(o => o.status === 'pending' || o.status === 'cooking');
 
         if (bepOrders.length === 0) {
             ordersListContainer.innerHTML = '<p style="text-align:center; color:#aaa; padding: 20px;">Hiện tại không có đơn hàng nào chờ làm.</p>';
@@ -104,33 +129,22 @@
                     itemsHTML = `<p>Món: <strong>${o.items || ''}</strong></p>`;
                 }
 
-                let currentStatus = String(o.status || '').toLowerCase().trim();
+                // Kiểm tra nhãn đơn trả trước
+                const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
+                const isPaidAhead = itemsStr.includes('ĐÃ CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT');
+                let paidBadge = isPaidAhead ? `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>` : '';
+
                 let statusTextText = '';
                 let buttonHTML = '';
                 let borderLeftColor = '#e67e22';
-                let paidBadge = '';
 
-                // Kiểm tra nếu là đơn Đã thanh toán trước (status ban đầu = paid)
-                if (currentStatus === 'paid') {
-                    paidBadge = `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>`;
-                    statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
-                    buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
-                    borderLeftColor = '#e67e22';
-                } 
-                // Trạng thái đang chế biến món ăn (áp dụng chung cho cả đơn trả trước và trả sau)
-                else if (currentStatus === 'cooking' || currentStatus === 'đang làm') {
-                    const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-                    if (itemsStr.includes('ĐÃ TRẢ TIỀN')) {
-                        paidBadge = `<span class="paid-now-badge">💵 ĐÃ TRẢ TIỀN TRƯỚC</span>`;
-                    }
-                    
-                    statusTextText = '<span style="color: #3498db; font-weight: bold;">Đang nấu</span>';
-                    buttonHTML = `<button class="btn-status" style="background: #3498db" onclick="updateStatus('${o.id}', 'bep_done')">✅ Xong (Hoàn thành đơn)</button>`;
+                if (o.status === 'cooking') {
+                    statusTextText = '<span style="color: #3498db; font-weight: bold;">Đang nấu...</span>';
+                    // Ấn xong món chuyển sang trạng thái bưng bê ('done') cho cả 2 loại đơn
+                    buttonHTML = `<button class="btn-status" style="background: #3498db" onclick="updateStatus('${o.id}', 'done')">🔔 Báo xong (Chuyển Phục Vụ bưng)</button>`;
                     borderLeftColor = '#3498db';
-                }
-                // Trạng thái chờ làm của đơn trả sau bình thường
-                else {
-                    statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ làm</span>';
+                } else {
+                    statusTextText = '<span style="color: #e67e22; font-weight: bold;">Chờ bếp làm</span>';
                     buttonHTML = `<button class="btn-status" style="background: #e67e22" onclick="updateStatus('${o.id}', 'cooking')">🍳 Bắt đầu làm</button>`;
                     borderLeftColor = '#e67e22';
                 }
@@ -139,19 +153,22 @@
                     <div class="order-card" style="border-left: 6px solid ${borderLeftColor};">
                         <h3>📍 Bàn: ${o.table_number} ${paidBadge}</h3>
                         ${itemsHTML}
+                        <p style="margin: 5px 0;">Tổng tiền: <strong>${(o.total || 0).toLocaleString()}đ</strong></p>
                         <p>Trạng thái: <strong>${statusTextText}</strong></p>
                         ${buttonHTML}
+                        <div class="order-actions">
+                            <button class="btn-edit-order" onclick="openEditModal('${o.id}', \`${itemsStr}\`, ${o.total})">📝 Sửa đơn</button>
+                            <button class="btn-cancel-order" onclick="cancelOrder('${o.id}')">❌ Hủy đơn</button>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // --- 2. LỌC LOGIC BẢNG TÍNH TIỀN CHO THU NGÂN ---
-        // Thu ngân quản lý tất cả các đơn trả sau chưa thanh toán tiền mặt (loại bỏ đơn trả trước 'paid' và 'bep_done')
+        // --- BẢNG TÍNH TIỀN CHO THU NGÂN TẠI QUẦY (Chỉ gom đơn trả sau) ---
         const debts = (allOrders || []).filter(o => {
-            const st = String(o.status).toLowerCase().trim();
             const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
-            return st !== 'paid' && st !== 'bep_done' && !itemsStr.includes('ĐÃ TRẢ TIỀN');
+            return !itemsStr.includes('ĐÃ CHUYỂN KHOẢN') && !itemsStr.includes('TIỀN MẶT');
         }).reduce((acc, o) => {
             acc[o.table_number] = (acc[o.table_number] || 0) + (o.total || 0);
             return acc;
@@ -159,7 +176,7 @@
 
         const debtsListContainer = document.getElementById('table-debts-list');
         if (Object.keys(debts).length === 0) {
-            debtsListContainer.innerHTML = '<p style="text-align:center; color:#aaa; padding: 15px;">Không có bàn nào cần tính tiền.</p>';
+            debtsListContainer.innerHTML = '<p style="text-align:center; color:#aaa; padding: 15px;">Không có bàn nào chờ thanh toán tại quầy.</p>';
         } else {
             debtsListContainer.innerHTML = Object.entries(debts).map(([table, total]) => `
                 <div class="table-debt-row">
@@ -169,51 +186,76 @@
             `).join('');
         }
 
-        // Hiển thị tổng doanh thu ngày hôm nay (Doanh thu tổng hợp theo ngày chuẩn)
+        // Cập nhật hiển thị doanh thu tổng
         const { data: rev } = await adminSupabase.from('revenue').select('total').eq('date', getToday()).maybeSingle();
         document.getElementById('today-revenue').innerText = (rev?.total || 0).toLocaleString();
     }
 
-    // Hàm cập nhật trạng thái đồng bộ duy nhất qua cột `status`
     async function updateStatus(id, nextStatus) {
         const { error } = await adminSupabase.from('orders').update({ status: nextStatus }).eq('id', parseInt(id));
-        if (error) { 
-            alert("Lỗi cập nhật trạng thái đơn: " + error.message); 
-        } else { 
-            loadData(); 
-        }
+        if (error) { alert("Lỗi: " + error.message); } else { loadData(); }
     }
 
     async function payTable(table, amount) {
-        if(!confirm("Thu tiền bàn " + table + "? Đơn sẽ được chuyển sang trạng thái Đã Thanh Toán.")) return;
+        if(!confirm("Thu tiền bàn " + table + " số tiền " + amount.toLocaleString() + "đ? Đơn hàng sẽ hoàn tất.")) return;
         
         const { error: orderError } = await adminSupabase.from('orders').update({ status: 'paid' }).eq('table_number', table).neq('status', 'paid');
-        if (orderError) {
-            alert("Lỗi ẩn đơn hàng: " + orderError.message);
-            return;
-        }
+        if (orderError) { alert("Lỗi: " + orderError.message); return; }
         
         const todayDate = getToday();
         const { data: rev } = await adminSupabase.from('revenue').select('total').eq('date', todayDate).maybeSingle();
         const newTotal = (rev?.total || 0) + amount;
         
-        const { error: revError } = await adminSupabase.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
-        if (revError) {
-            alert("Đơn đã thanh toán thành công nhưng lỗi lưu doanh thu: " + revError.message);
-        }
-        
+        await adminSupabase.from('revenue').upsert({ date: todayDate, total: newTotal }, { onConflict: 'date' });
+        alert("✅ Thanh toán quầy thành công!");
         loadData();
     }
 
-    // ========================================================
-    // 🔔 KÊNH REALTIME - PHÁT ÂM THANH KHI CÓ ĐƠN MỚI ĐẨY LÊN
-    // ========================================================
+    // Hàm Hủy đơn hoàn toàn (Không cộng doanh thu)
+    async function cancelOrder(id) {
+        if (!confirm("Bạn chắc chắn muốn HỦY đơn hàng này? Đơn sẽ bị xóa khỏi hệ thống và không tính vào doanh thu.")) return;
+        const { error } = await adminSupabase.from('orders').delete().eq('id', parseInt(id));
+        if (error) { alert("Lỗi khi hủy đơn: " + error.message); } else { alert("🚀 Đã hủy đơn hàng!"); loadData(); }
+    }
+
+    // Các hàm xử lý đóng mở và lưu dữ liệu Modal chỉnh sửa đơn hàng
+    function openEditModal(id, items, total) {
+        document.getElementById('edit-id').value = id;
+        document.getElementById('edit-items').value = items;
+        document.getElementById('edit-total').value = total;
+        document.getElementById('edit-order-modal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('edit-order-modal').style.display = 'none';
+    }
+
+    async function saveEditedOrder() {
+        const id = document.getElementById('edit-id').value;
+        const rawItems = document.getElementById('edit-items').value.trim();
+        const newTotal = parseFloat(document.getElementById('edit-total').value || 0);
+
+        // Chuyển text chỉnh sửa ngược lại thành mảng lines để giao diện hiển thị đẹp mắt
+        const itemsArray = rawItems.split('\n').filter(line => line.trim() !== '');
+
+        const { error } = await adminSupabase.from('orders').update({
+            items: itemsArray,
+            total: newTotal
+        }).eq('id', parseInt(id));
+
+        if (error) {
+            alert("Lỗi lưu chỉnh sửa: " + error.message);
+        } else {
+            alert("✅ Đã cập nhật đơn hàng!");
+            closeEditModal();
+            loadData();
+        }
+    }
+
     adminSupabase.channel('admin-legacy-fixed-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
             if (payload.eventType === 'INSERT') {
-                orderNotificationSound.play().catch(e => {
-                    console.log("Trình duyệt tạm chặn âm thanh Autoplay ban đầu: " + e.message);
-                });
+                orderNotificationSound.play().catch(e => console.log(e.message));
             }
             loadData();
         })
