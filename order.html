@@ -143,7 +143,7 @@
 
         .btn-qty { background: #e0d7cf; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         
-        /* ĐỒNG BỘ 2 NÚT BẤM GỬI ĐƠN / THÀNH TOÁN TRƯỚC */
+        /* ĐỒNG BỘ NÚT GỬI ĐƠN / THÀNH TOÁN TRƯỚC */
         .btn-submit { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
         .btn-pay-now { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; }
@@ -191,7 +191,7 @@
             margin-left: 5px;
         }
 
-        /* 🆕 NÚT VÀ CẤU TRÚC ĐIỀU KHIỂN HÀNH ĐỘNG ĐƠN */
+        /* NÚT VÀ CẤU TRÚC ĐIỀU KHIỂN HÀNH ĐỘNG ĐƠN */
         .waiter-action-group {
             display: flex;
             gap: 8px;
@@ -209,7 +209,7 @@
             font-size: 13px;
         }
 
-        /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT & POPUP QR & POPUP SỬA ĐƠN */
+        /* MODAL POPUPS */
         .combo-modal {
             display: none; 
             position: fixed; 
@@ -251,7 +251,7 @@
         .btn-modal-save { flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-modal-close { flex: 1; background: #ccc; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-        /* 🔥 Ảnh QR tự co giãn mượt mà */
+        /* Ảnh QR tự co giãn mượt mà */
         .qr-image {
             width: 100%;
             max-width: 520px;
@@ -341,12 +341,26 @@
             <h3 style="color: #27ae60; margin-bottom: 5px;">Thu Tiền Trả Trước</h3>
             <p id="qr-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
             
-            <img id="qr-pay-img" src="2aOboQdQDRATgIqvbsDnMV5cBZLITs3W1FwJspiC.jpg" alt="Mã QR Quán" class="qr-image">
+            <img id="qr-pay-img" src="" alt="Mã QR Quán" class="qr-image">
             
             <button class="btn-confirm-pay" onclick="submitAndPayImmediately('CHUYỂN KHOẢN')">✅ Khách đã quét - Xác nhận CK</button>
             <button class="btn-cash-pay" onclick="submitAndPayImmediately('TIỀN MẶT')">💵 Khách trả TIỀN MẶT - Xác nhận</button>
             
             <button class="btn-close-modal" onclick="closeQrModal()">Đóng cửa sổ</button>
+        </div>
+    </div>
+
+    <div id="qr-pay-later-modal" class="combo-modal">
+        <div class="combo-modal-content" style="max-width: 600px; width: 90%;">
+            <h3 style="color: #e67e22; margin-bottom: 5px;">💵 Thu Tiền Tại Bàn (Trả Sau)</h3>
+            <p id="qr-later-modal-info" style="font-size: 14px; margin: 0; color: #666;"></p>
+            
+            <img id="qr-pay-later-img" src="" alt="Mã QR Quán" class="qr-image">
+            
+            <button class="btn-confirm-pay" style="background: #27ae60;" id="btn-confirm-later-ck">✅ Khách đã quét - Xác nhận CK & Mất Đơn</button>
+            <button class="btn-cash-pay" style="background: #e67e22;" id="btn-confirm-later-cash">💵 Khách trả TIỀN MẶT - Xác nhận & Mất Đơn</button>
+            
+            <button class="btn-close-modal" onclick="closeQrLaterModal()">Đóng cửa sổ</button>
         </div>
     </div>
 
@@ -372,6 +386,11 @@
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
         
+        // ⚙️ THÔNG TIN NGÂN HÀNG CỦA BẠN:
+        const MY_BANK_CODE = "Vietcombank";  
+        const MY_BANK_ACCOUNT = "STK_CUA_BAN"; 
+        const MY_ACCOUNT_NAME = "TEN_CHU_TK";  
+
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             global: { headers: { 'x-passcode': 'beut123' } }
         });
@@ -397,13 +416,12 @@
         }
 
         async function loadActiveOrders() {
-            // Lấy toàn bộ đơn ngoại trừ các đơn đã hoàn tất ẩn hoàn toàn khỏi bếp và phục vụ ('bep_done')
             const { data: orders, error } = await supabaseClient.from('orders').select('*').neq('status', 'bep_done').order('id', { ascending: true });
             if (error) { console.error(error); return; }
 
             const listContainer = document.getElementById('waiter-orders-list');
             if (!orders || orders.length === 0) {
-                listContainer.innerHTML = '<p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào cần xử lý.</p>';
+                listContainer.innerHTML = '<p style="text-align: center; color: #888; font-size: 13px;">Chưa có bàn nào gọi món.</p>';
                 return;
             }
 
@@ -415,12 +433,10 @@
                     itemsHTML = `<li>${o.items}</li>`;
                 }
 
-                // Nhận diện loại đơn trả trước
                 const itemsStr = Array.isArray(o.items) ? o.items.join('\n') : String(o.items || '');
                 const isPaidAhead = itemsStr.includes('ĐÃ CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT') || o.status === 'paid';
                 let paidBadge = isPaidAhead ? `<span class="paid-now-badge-inline">💵 TRẢ TRƯỚC</span>` : '';
 
-                // Xác định màu sắc nhãn trạng thái và nút tương tác
                 let badgeColor = '#e67e22'; 
                 let badgeText = 'Chờ làm';
                 let actionButtonHTML = '';
@@ -436,16 +452,13 @@
                     badgeText = 'Trả trước (Chờ làm)'; 
                 }
 
-                // Cập nhật cấu trúc nút bấm cho từng loại đơn
                 if (isPaidAhead) {
                     if (o.status === 'done') {
-                        // Nếu bếp báo đã nấu xong đơn trả trước -> phục vụ bưng lên xong nhấn hoàn tất để ẩn đơn
                         actionButtonHTML = `<button class="btn-pay-fast" style="background: #2ecc71;" onclick="servePaidAheadOrder('${o.id}')">✅ Đã phục vụ món (Ẩn đơn)</button>`;
                     } else {
                         actionButtonHTML = `<button class="btn-pay-fast" style="background: #7f8c8d; cursor: not-allowed;" disabled>⏳ Đang chờ Bếp chế biến món...</button>`;
                     }
                 } else {
-                    // Nếu là đơn trả sau -> Có nút thu tiền tại bàn xuyên suốt quy trình
                     let warningParam = (o.status !== 'done') ? 'true' : 'false';
                     actionButtonHTML = `<button class="btn-pay-fast" onclick="payTableFast('${o.id}', '${o.table_number}', ${o.total}, ${warningParam})">💵 Thu tiền tại bàn (Món ${badgeText.toLowerCase()})</button>`;
                 }
@@ -628,6 +641,12 @@
             const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.quantity), 0);
             
             document.getElementById('qr-modal-info').innerHTML = `<b>Bàn:</b> ${table} | <b>Cần thu:</b> <span class='money'>${total.toLocaleString()}đ</span>`;
+            
+            const transferInfo = encodeURIComponent(`BAN ${table} THANH TOAN`);
+            const encodedName = encodeURIComponent(MY_ACCOUNT_NAME);
+            const vietQrUrl = `https://img.vietqr.io/image/${MY_BANK_CODE}-${MY_BANK_ACCOUNT}-qr_only.png?amount=${total}&addInfo=${transferInfo}&accountName=${encodedName}`;
+            
+            document.getElementById('qr-pay-img').src = vietQrUrl;
             document.getElementById('qr-pay-modal').style.display = 'flex';
         }
 
@@ -692,17 +711,39 @@
             loadActiveOrders();
         }
 
-        // XỬ LÝ CHO ĐƠN TRẢ SAU: Thu tiền trực tiếp tại bàn và cộng doanh thu
+        function closeQrLaterModal() {
+            document.getElementById('qr-pay-later-modal').style.display = 'none';
+        }
+
+        // ĐỒNG BỘ NÚT THU TIỀN TRẢ SAU: Bật popup QR, có 2 nút xác nhận CK và tiền mặt riêng biệt
         async function payTableFast(id, table, amount, isUnfinished) {
             if (isUnfinished) {
-                if (!confirm(`⚠️ CẢNH BÁO: Đơn hàng bàn ${table} hiện đang CHƯA LÀM XONG!\nBạn có chắc chắn muốn tính tiền sớm và ẩn đơn này không?`)) {
+                if (!confirm(`⚠️ CẢNH BÁO: Đơn hàng bàn ${table} hiện đang CHƯA LÀM XONG!\nBạn có chắc chắn muốn tính tiền sớm cho bàn này không?`)) {
                     return;
                 }
-            } else {
-                if (!confirm(`Thu tiền bàn ${table} số tiền ${amount.toLocaleString()}đ? Đơn hàng sẽ hoàn tất.`)) return;
             }
 
-            // Chuyển trạng thái sang 'bep_done' để đồng bộ ẩn ở cả màn bếp và phục vụ
+            document.getElementById('qr-later-modal-info').innerHTML = `<b>Bàn số:</b> ${table} | <b>Tổng tiền thanh toán:</b> <span class='money'>${amount.toLocaleString()}đ</span>`;
+            
+            const transferInfo = encodeURIComponent(`BAN ${table} TINH TIEN`);
+            const encodedName = encodeURIComponent(MY_ACCOUNT_NAME);
+            const vietQrUrl = `https://img.vietqr.io/image/${MY_BANK_CODE}-${MY_BANK_ACCOUNT}-qr_only.png?amount=${amount}&addInfo=${transferInfo}&accountName=${encodedName}`;
+            
+            document.getElementById('qr-pay-later-img').src = vietQrUrl;
+            
+            // Gán hành động tương ứng cho 2 nút Bấm Xác Nhận trên Popup Trả sau
+            document.getElementById('btn-confirm-later-ck').onclick = function() {
+                executePayTableLater(id, table, amount, 'CHUYỂN KHOẢN');
+            };
+            document.getElementById('btn-confirm-later-cash').onclick = function() {
+                executePayTableLater(id, table, amount, 'TIỀN MẶT');
+            };
+
+            document.getElementById('qr-pay-later-modal').style.display = 'flex';
+        }
+
+        // HÀM XỬ LÝ KHI PHỤC VỤ ẤN NÚT XÁC NHẬN TRÊN POPUP QR TRẢ SAU
+        async function executePayTableLater(id, table, amount, paymentMethod) {
             const { error: orderError } = await supabaseClient.from('orders').update({ status: 'bep_done' }).eq('id', parseInt(id));
             if (orderError) {
                 alert("Lỗi xử lý đơn hàng: " + orderError.message);
@@ -717,13 +758,14 @@
             if (revError) {
                 alert("Đơn hàng đã ẩn nhưng lỗi lưu doanh thu: " + revError.message);
             } else {
-                alert("✅ Thanh toán hoàn tất! Tiền đã cộng vào doanh thu hôm nay.");
+                alert(`✅ Xác nhận thanh toán [${paymentMethod}] bàn ${table} thành công! Đơn hàng đã đóng & cộng doanh thu.`);
             }
 
+            closeQrLaterModal();
             loadActiveOrders();
         }
 
-        // XỬ LÝ CHO ĐƠN TRẢ TRƯỚC: Chỉ ẩn đơn đi khi đã phục vụ xong (Doanh thu đã cộng từ lúc tạo đơn)
+        // XỬ LÝ CHO ĐƠN TRẢ TRƯỚC: Chỉ ẩn đơn đi khi đã phục vụ xong
         async function servePaidAheadOrder(id) {
             if (!confirm("Xác nhận món ăn này đã được bưng lên phục vụ xong cho khách? Đơn hàng sẽ đóng.")) return;
             
@@ -736,7 +778,7 @@
             }
         }
 
-        /* 🆕 CÁC HÀM XỬ LÝ POPUP CHỈNH SỬA ĐƠN HÀNG */
+        /* POPUP CHỈNH SỬA ĐƠN HÀNG */
         function openEditModal(id, items, total) {
             document.getElementById('edit-id').value = id;
             document.getElementById('edit-items').value = items;
@@ -755,7 +797,6 @@
 
             if (!rawItems) return alert("Nội dung món ăn không được để trống!");
 
-            // Chuyển chuỗi text phân tách dòng thành mảng array lưu lên database
             const itemsArray = rawItems.split('\n').filter(line => line.trim() !== '');
 
             try {
@@ -769,14 +810,14 @@
                 } else {
                     alert("✅ Chỉnh sửa đơn hàng thành công!");
                     closeEditModal();
-                    loadActiveOrders(); // Load lại giao diện cục bộ
+                    loadActiveOrders(); 
                 }
             } catch (err) {
                 alert("Lỗi kết nối mạng khi sửa!");
             }
         }
 
-        // 🔥 ĐỒNG BỘ REALTIME TOÀN DIỆN: Lắng nghe mọi cập nhật trạng thái từ Bếp để hiển thị nút chuẩn xác
+        // ĐỒNG BỘ REALTIME TOÀN DIỆN
         supabaseClient.channel('waiter-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadActiveOrders).subscribe();
 
         window.onload = loadInitialData;
