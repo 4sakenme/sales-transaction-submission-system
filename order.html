@@ -162,7 +162,7 @@
         .waiter-order-card ul { margin: 5px 0; padding-left: 18px; font-size: 13px; color: #555; }
         
         .btn-pay-fast {
-            width: 100%;
+            flex: 1.3;
             background: #27ae60;
             color: white;
             border: none;
@@ -170,7 +170,6 @@
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 8px;
             font-size: 13px;
         }
         .item-status-badge {
@@ -192,7 +191,25 @@
             margin-left: 5px;
         }
 
-        /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT & POPUP QR */
+        /* 🆕 NÚT VÀ CẤU TRÚC ĐIỀU KHIỂN HÀNH ĐỘNG ĐƠN */
+        .waiter-action-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-edit-fast {
+            flex: 0.7;
+            background: #f39c12;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* 🔔 POPUP CHỌN VỊ COMBO ĂN VẶT & POPUP QR & POPUP SỬA ĐƠN */
         .combo-modal {
             display: none; 
             position: fixed; 
@@ -216,7 +233,10 @@
             to { transform: scale(1); opacity: 1; }
         }
         .combo-modal h3 { margin-top: 0; color: #4e3629; font-size: 18px; }
+        .combo-modal label { display: block; margin-top: 12px; font-weight: bold; font-size: 13px; text-align: left; color: #4e3629; }
+        .combo-modal textarea, .combo-modal input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 6px; }
         .combo-btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        
         .btn-taste {
             padding: 12px; border: 2px solid #eddcd0; border-radius: 10px;
             font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; background: #fff8f2; color: #4e3629;
@@ -224,7 +244,12 @@
         .btn-taste:hover { border-color: #e7a460; background: #fff; }
         .btn-taste.sauce { border-color: #e67e22; color: #e67e22; background: #fffcf9; }
         .btn-taste.sauce:hover { background: #e67e22; color: white; }
+        
         .btn-close-modal { background: #ccc; color: white; border: none; padding: 8px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold; }
+        
+        .modal-buttons-row { display: flex; gap: 8px; margin-top: 15px; }
+        .btn-modal-save { flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-modal-close { flex: 1; background: #ccc; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
         /* 🔥 Ảnh QR tự co giãn mượt mà */
         .qr-image {
@@ -325,6 +350,24 @@
         </div>
     </div>
 
+    <div id="edit-order-modal" class="combo-modal">
+        <div class="combo-modal-content" style="max-width: 400px; width: 90%;">
+            <h3 style="color: #e67e22; margin-bottom: 5px;">📝 Chỉnh sửa đơn hàng</h3>
+            <input type="hidden" id="edit-id">
+            
+            <label>Nội dung món ăn (Mỗi món 1 dòng):</label>
+            <textarea id="edit-items" rows="6" placeholder="Ví dụ:&#10;Cà phê sữa (x2)&#10;Trà đào (x1)"></textarea>
+            
+            <label>Tổng tiền đơn (đ):</label>
+            <input type="number" id="edit-total" placeholder="Nhập số tiền...">
+            
+            <div class="modal-buttons-row">
+                <button class="btn-modal-save" onclick="saveEditedOrder()">Lưu thay đổi</button>
+                <button class="btn-modal-close" onclick="closeEditModal()">Hủy</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://vfducmflkdlgwxvpiibv.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZHVjbWZsa2RsZ3d4dnBpaWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTY1MjMsImV4cCI6MjA5Njg5MjUyM30.mJ1xSHBeSQ1nDHUjPLc9GYA_RON0_bEIqpzTwYrjidM";
@@ -373,7 +416,7 @@
                 }
 
                 // Nhận diện loại đơn trả trước
-                const itemsStr = Array.isArray(o.items) ? o.items.join(' ') : String(o.items || '');
+                const itemsStr = Array.isArray(o.items) ? o.items.join('\n') : String(o.items || '');
                 const isPaidAhead = itemsStr.includes('ĐÃ CHUYỂN KHOẢN') || itemsStr.includes('TIỀN MẶT') || o.status === 'paid';
                 let paidBadge = isPaidAhead ? `<span class="paid-now-badge-inline">💵 TRẢ TRƯỚC</span>` : '';
 
@@ -417,7 +460,10 @@
                         <ul style="list-style-type: square; padding-left: 20px;">
                             ${itemsHTML}
                         </ul>
-                        ${actionButtonHTML}
+                        <div class="waiter-action-group">
+                            <button class="btn-edit-fast" onclick="openEditModal('${o.id}', \`${itemsStr.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, ${o.total})">📝 Sửa đơn</button>
+                            ${actionButtonHTML}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -687,6 +733,46 @@
             } else {
                 alert("🚀 Đã hoàn tất và đóng đơn trả trước!");
                 loadActiveOrders();
+            }
+        }
+
+        /* 🆕 CÁC HÀM XỬ LÝ POPUP CHỈNH SỬA ĐƠN HÀNG */
+        function openEditModal(id, items, total) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-items').value = items;
+            document.getElementById('edit-total').value = total;
+            document.getElementById('edit-order-modal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-order-modal').style.display = 'none';
+        }
+
+        async function saveEditedOrder() {
+            const id = document.getElementById('edit-id').value;
+            const rawItems = document.getElementById('edit-items').value.trim();
+            const newTotal = parseFloat(document.getElementById('edit-total').value || 0);
+
+            if (!rawItems) return alert("Nội dung món ăn không được để trống!");
+
+            // Chuyển chuỗi text phân tách dòng thành mảng array lưu lên database
+            const itemsArray = rawItems.split('\n').filter(line => line.trim() !== '');
+
+            try {
+                const { error } = await supabaseClient.from('orders').update({
+                    items: itemsArray,
+                    total: newTotal
+                }).eq('id', parseInt(id));
+
+                if (error) {
+                    alert("Lỗi cập nhật đơn hàng: " + error.message);
+                } else {
+                    alert("✅ Chỉnh sửa đơn hàng thành công!");
+                    closeEditModal();
+                    loadActiveOrders(); // Load lại giao diện cục bộ
+                }
+            } catch (err) {
+                alert("Lỗi kết nối mạng khi sửa!");
             }
         }
 
